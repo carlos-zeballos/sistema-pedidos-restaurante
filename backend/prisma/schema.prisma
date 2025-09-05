@@ -1,0 +1,255 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  ADMIN
+  MOZO
+  COCINERO
+  CAJA
+  BARRA
+}
+
+enum OrderStatus {
+  PENDIENTE
+  EN_PREPARACION
+  LISTO
+  ENTREGADO
+  CANCELADO
+}
+
+enum TableStatus {
+  LIBRE
+  OCUPADA
+  RESERVADA
+  MANTENIMIENTO
+}
+
+enum ProductType {
+  COMIDA
+  BEBIDA
+  POSTRE
+  COMBO
+  ADICIONAL
+}
+
+enum SpaceType {
+  MESA
+  BARRA
+  DELIVERY
+  RESERVA
+}
+
+enum ReservationStatus {
+  CONFIRMADA
+  PENDIENTE
+  CANCELADA
+  COMPLETADA
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  firstName String
+  lastName  String
+  email     String?  @unique
+  phone     String?
+  role      UserRole
+  isActive  Boolean  @default(true)
+  lastLogin DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
+  assignedOrders Order[] @relation("AssignedOrders")
+
+  @@map("User")
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  code      String    @unique
+  name      String
+  description String?
+  image     String?
+  ord       Int       @default(0)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+  combos    Combo[]
+
+  @@map("Category")
+}
+
+model Product {
+  id              String      @id @default(uuid())
+  code            String      @unique
+  name            String
+  description     String?
+  price           Decimal     @db.Decimal(10, 2)
+  type            ProductType
+  categoryId      String
+  category        Category    @relation(fields: [categoryId], references: [id])
+  image           String?
+  preparationTime Int?
+  isAvailable     Boolean     @default(true)
+  isEnabled       Boolean     @default(true)
+  allergens       String[]
+  nutritionalInfo Json?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  orderItems      OrderItem[]
+
+  @@map("Product")
+}
+
+model Combo {
+  id              String          @id @default(uuid())
+  code            String          @unique
+  name            String
+  description     String?
+  basePrice       Decimal         @db.Decimal(10, 2)
+  categoryId      String
+  category        Category        @relation(fields: [categoryId], references: [id])
+  image           String?
+  isEnabled       Boolean         @default(true)
+  isAvailable     Boolean         @default(true)
+  preparationTime Int?
+  maxSelections   Int?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  components      ComboComponent[]
+  orderItems      OrderItem[]
+
+  @@map("Combo")
+}
+
+model ComboComponent {
+  id          String @id @default(uuid())
+  comboId     String
+  combo       Combo  @relation(fields: [comboId], references: [id])
+  type        String // SABOR, COMPLEMENTO, BEBIDA, POSTRE, SALSA
+  name        String
+  description String?
+  price       Decimal @db.Decimal(10, 2) @default(0)
+  isAvailable Boolean @default(true)
+  ord         Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("ComboComponent")
+}
+
+model Space {
+  id        String      @id @default(uuid())
+  code      String      @unique
+  name      String
+  type      SpaceType
+  capacity  Int?
+  status    TableStatus @default(LIBRE)
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  orders    Order[]
+  reservations Reservation[]
+
+  @@map("Space")
+}
+
+model Reservation {
+  id          String            @id @default(uuid())
+  spaceId     String
+  space       Space             @relation(fields: [spaceId], references: [id])
+  customerName String
+  customerPhone String?
+  customerEmail String?
+  date        DateTime
+  time        String
+  partySize   Int
+  status      ReservationStatus @default(PENDIENTE)
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@map("Reservation")
+}
+
+model Order {
+  id                String      @id @default(uuid())
+  orderNumber       String      @unique
+  spaceId           String
+  space             Space       @relation(fields: [spaceId], references: [id])
+  customerName      String?
+  customerPhone     String?
+  status            OrderStatus @default(PENDIENTE)
+  totalAmount       Decimal     @db.Decimal(10, 2) @default(0)
+  subtotal          Decimal     @db.Decimal(10, 2) @default(0)
+  tax               Decimal     @db.Decimal(10, 2) @default(0)
+  discount          Decimal     @db.Decimal(10, 2) @default(0)
+  estimatedReadyTime DateTime?
+  actualReadyTime   DateTime?
+  notes             String?
+  createdBy         String
+  createdByUser     User        @relation(fields: [createdBy], references: [id])
+  assignedTo        String?
+  assignedToUser    User?       @relation("AssignedOrders", fields: [assignedTo], references: [id])
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  items             OrderItem[]
+  statusHistory     OrderStatusHistory[]
+
+  @@map("Order")
+}
+
+model OrderItem {
+  id           String      @id @default(uuid())
+  orderId      String
+  order        Order       @relation(fields: [orderId], references: [id])
+  productId    String?
+  product      Product?    @relation(fields: [productId], references: [id])
+  comboId      String?
+  combo        Combo?      @relation(fields: [comboId], references: [id])
+  name         String
+  unitPrice    Decimal     @db.Decimal(10, 2)
+  totalPrice   Decimal     @db.Decimal(10, 2)
+  quantity     Int         @default(1)
+  status       OrderStatus @default(PENDIENTE)
+  notes        String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  components   OrderItemComponent[]
+
+  @@map("OrderItem")
+}
+
+model OrderItemComponent {
+  id           String      @id @default(uuid())
+  orderItemId  String
+  orderItem    OrderItem   @relation(fields: [orderItemId], references: [id])
+  type         String      // SABOR, COMPLEMENTO, BEBIDA, POSTRE, SALSA
+  name         String
+  price        Decimal     @db.Decimal(10, 2) @default(0)
+  createdAt    DateTime    @default(now())
+
+  @@map("OrderItemComponent")
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(uuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id])
+  status    OrderStatus
+  changedBy String
+  changedAt DateTime    @default(now())
+  notes     String?
+
+  @@map("OrderStatusHistory")
+}
+
+

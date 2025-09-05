@@ -1,0 +1,23 @@
+-- =====================================================
+-- ESTRUCTURA PARA IMPORTAR PRODUCTOS
+-- =====================================================
+-- Este archivo contiene la estructura para importar productos
+-- Se debe ejecutar después de importar las categorías
+
+-- Ejemplo de uso:
+-- SELECT public.product_upsert(
+--   p_code := 'GYOZA-001',
+--   p_name := 'Gyozas (8 unidades)',
+--   p_category_id := (SELECT id FROM "Category" WHERE name = 'ENTRADAS'),
+--   p_price := 15.90,
+--   p_type := 'COMIDA',
+--   p_description := 'Empanadas japonesas rellenas de pollo teriyaki',
+--   p_image := NULL,
+--   p_preparation_time := 15,
+--   p_is_enabled := true,
+--   p_is_available := true,
+--   p_allergens := ARRAY['gluten', 'soja'],
+--   p_nutritional_info := '{"calories": 250, "protein": 12}',
+--   p_id := NULL
+-- );
+

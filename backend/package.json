@@ -62,16 +62,18 @@
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "axios": "^1.6.0",
+    "@nestjs/testing": "^11.0.1",
+    "@nestjs/passport": "^11.0.5",
+    "@types/jest": "^30.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.18.0",
     "@nestjs/schematics": "^11.0.0",
-    "@nestjs/testing": "^11.0.1",
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.0",
-    "@types/jest": "^30.0.0",
     "@types/node": "^22.17.2",
     "@types/supertest": "^6.0.2",
     "eslint": "^9.18.0",

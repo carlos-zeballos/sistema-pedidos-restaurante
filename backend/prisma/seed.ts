@@ -21,7 +21,7 @@ async function main() {
             lastName: 'Sistema',
             email: 'admin@restaurant.com',
             phone: '+1234567890',
-            passHash: hashedPassword,
+            password: hashedPassword,
             role: 'ADMIN',
             isActive: true
           }
@@ -34,7 +34,7 @@ async function main() {
             lastName: 'Principal',
             email: 'mozo@restaurant.com',
             phone: '+1234567891',
-            passHash: hashedPassword,
+            password: hashedPassword,
             role: 'MOZO',
             isActive: true
           }
@@ -47,7 +47,7 @@ async function main() {
             lastName: 'Chef',
             email: 'cocinero@restaurant.com',
             phone: '+1234567892',
-            passHash: hashedPassword,
+            password: hashedPassword,
             role: 'COCINERO',
             isActive: true
           }
@@ -60,7 +60,7 @@ async function main() {
             lastName: 'Sistema',
             email: 'caja@restaurant.com',
             phone: '+1234567893',
-            passHash: hashedPassword,
+            password: hashedPassword,
             role: 'CAJA',
             isActive: true
           }
@@ -73,7 +73,7 @@ async function main() {
             lastName: 'Barra',
             email: 'barra@restaurant.com',
             phone: '+1234567894',
-            passHash: hashedPassword,
+            password: hashedPassword,
             role: 'BARRA',
             isActive: true
           }

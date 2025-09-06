@@ -1,0 +1,17 @@
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "frontend/build"
+
+[build.environment]
+  REACT_APP_API_URL = "https://sistema-pedidos-restaurante.onrender.com"
+
+# Deshabilitar submodules
+[build.processing]
+  skip_processing = false
+
+# Configuración para SPA
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

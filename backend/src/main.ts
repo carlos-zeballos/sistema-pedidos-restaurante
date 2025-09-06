@@ -10,7 +10,12 @@ async function bootstrap() {
     
     // Configurar CORS
     app.enableCors({
-      origin: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:3000',
+      origin: [
+        'https://vermillion-snickerdoodle-5f1291.netlify.app',
+        'http://localhost:3000',
+        'http://localhost:5173',
+        process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:3000'
+      ],
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],

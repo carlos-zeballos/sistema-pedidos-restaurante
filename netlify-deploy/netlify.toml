@@ -1,7 +1,0 @@
-[build.environment]
-  REACT_APP_API_URL = "https://sistema-pedidos-restaurante.onrender.com"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200

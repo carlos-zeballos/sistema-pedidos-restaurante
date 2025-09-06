@@ -104,3 +104,6 @@ temp/
 # Netlify
 .netlify
 
+# Git submodules (avoid Netlify issues)
+.gitmodules
+

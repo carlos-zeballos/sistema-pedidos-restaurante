@@ -295,3 +295,4 @@ COMMIT;
 
 SELECT 'Mejoras en la creación de órdenes aplicadas exitosamente' as resultado;
 
+

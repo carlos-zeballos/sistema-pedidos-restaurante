@@ -11,6 +11,7 @@ async function bootstrap() {
     // Configurar CORS
     app.enableCors({
       origin: [
+        'https://precious-travesseiro-c0f1d0.netlify.app',
         'https://vermillion-snickerdoodle-5f1291.netlify.app',
         'http://localhost:3000',
         'http://localhost:5173',

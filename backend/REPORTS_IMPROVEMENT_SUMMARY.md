@@ -131,3 +131,4 @@
 4. **Implementar gráficos** adicionales si es necesario
 5. **Exportar reportes** a PDF/Excel para análisis offline
 
+

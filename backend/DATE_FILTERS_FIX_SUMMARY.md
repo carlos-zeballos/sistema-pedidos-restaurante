@@ -138,3 +138,4 @@ const isIncluded = orderDate >= dateRangeFilters.fromDate;
 **Estado**: ✅ COMPLETADO  
 **Funcionalidad**: ✅ FUNCIONANDO
 
+

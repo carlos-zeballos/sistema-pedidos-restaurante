@@ -129,3 +129,4 @@
 
 **¡El apartado de reportes ahora tiene un diseño profesional y moderno que rivaliza con las mejores aplicaciones del mercado!**
 
+

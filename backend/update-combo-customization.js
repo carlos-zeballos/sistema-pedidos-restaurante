@@ -97,3 +97,4 @@ console.log('Sistema de palillos mejorado para manejar ambos tipos simultáneame
 
 
 
+

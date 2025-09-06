@@ -95,3 +95,4 @@ async function checkTableStructure() {
 }
 
 checkTableStructure();
+

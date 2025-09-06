@@ -211,3 +211,4 @@ Tu sistema de pedidos está listo para usar en tu empresa.
 - ✅ Catálogo de productos y combos
 - ✅ Sistema de autenticación por roles
 - ✅ Responsive para tablets y móviles
+

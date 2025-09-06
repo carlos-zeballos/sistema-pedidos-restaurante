@@ -78,3 +78,4 @@ async function checkProductStructure() {
 
 checkProductStructure();
 
+

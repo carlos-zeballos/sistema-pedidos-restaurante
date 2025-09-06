@@ -91,3 +91,4 @@ async function debugTimerDisplay() {
 }
 
 debugTimerDisplay();
+

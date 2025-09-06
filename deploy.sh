@@ -181,3 +181,4 @@ echo "5. Deploy frontend: cd resto-sql/frontend && vercel"
 echo "6. Configura tu dominio personalizado"
 echo ""
 print_status "Para más detalles, revisa el archivo deploy-guide.md"
+

@@ -52,3 +52,4 @@ GRANT EXECUTE ON FUNCTION public.get_products_for_combo_components(uuid) TO anon
 SELECT pg_notify('pgrst','reload schema');
 
 
+

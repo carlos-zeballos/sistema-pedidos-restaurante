@@ -137,3 +137,4 @@ const isIncluded = orderDate >= dateRangeFilters.fromDate;
 **Fecha de Implementación**: 2025-01-27  
 **Estado**: ✅ COMPLETADO  
 **Funcionalidad**: ✅ FUNCIONANDO
+

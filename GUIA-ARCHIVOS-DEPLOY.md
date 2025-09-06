@@ -209,3 +209,4 @@ FRONTEND_URL=https://tu-frontend-url.netlify.app
 - **VERCEL**: `resto-sql/backend/` (carpeta completa)
 
 **¡Tu sistema estará disponible en la web! 🚀**
+

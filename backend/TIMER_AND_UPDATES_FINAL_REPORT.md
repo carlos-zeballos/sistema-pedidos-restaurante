@@ -118,3 +118,4 @@ const rows = items.map((it) => ({
 **Han sido resueltos exitosamente.**
 
 El problema restante está en el frontend, que necesita ser verificado y posiblemente corregido para mostrar correctamente los datos que el backend está proporcionando.
+

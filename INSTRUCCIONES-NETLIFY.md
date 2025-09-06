@@ -239,3 +239,4 @@ Tu sistema de pedidos estará disponible en:
 - **Dominio personalizado**: `https://turestaurante.com` (opcional)
 
 **¡Listo para usar en tu empresa! 🎉**
+

@@ -128,3 +128,4 @@
 **El nuevo diseño transforma completamente la experiencia de los reportes, creando una interfaz moderna, atractiva y funcional que hace que los datos sean más fáciles de entender y más agradables de visualizar.**
 
 **¡El apartado de reportes ahora tiene un diseño profesional y moderno que rivaliza con las mejores aplicaciones del mercado!**
+

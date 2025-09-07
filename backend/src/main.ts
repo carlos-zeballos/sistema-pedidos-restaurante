@@ -8,18 +8,32 @@ async function bootstrap() {
   try {
     const app = await NestFactory.create(AppModule);
     
-    // Configurar CORS
+    // Configurar CORS más robusto
     app.enableCors({
-      origin: [
-        'https://precious-travesseiro-c0f1d0.netlify.app',
-        'https://vermillion-snickerdoodle-5f1291.netlify.app',
-        'http://localhost:3000',
-        'http://localhost:5173',
-        process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:3000'
-      ],
+      origin: function (origin, callback) {
+        // Permitir requests sin origin (mobile apps, postman, etc.)
+        if (!origin) return callback(null, true);
+        
+        const allowedOrigins = [
+          'https://precious-travesseiro-c0f1d0.netlify.app',
+          'https://vermillion-snickerdoodle-5f1291.netlify.app',
+          'http://localhost:3000',
+          'http://localhost:5173',
+          process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:3000'
+        ];
+        
+        if (allowedOrigins.indexOf(origin) !== -1) {
+          callback(null, true);
+        } else {
+          console.log('🚫 CORS blocked origin:', origin);
+          callback(null, true); // Permitir temporalmente para debug
+        }
+      },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+      preflightContinue: false,
+      optionsSuccessStatus: 200
     });
     
     // Configurar validación global

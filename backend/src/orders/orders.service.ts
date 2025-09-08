@@ -161,13 +161,24 @@ export class OrdersService {
       p_is_delivery: createOrderDto.isDelivery ?? false,
     } as any;
 
+    console.log('🚀 Llamando RPC create_order_with_items con payload:', JSON.stringify(rpcPayload, null, 2));
+    
     const { data: rpcData, error: rpcError } = await this.supabaseService
       .getClient()
       .rpc('create_order_with_items', rpcPayload);
 
     if (rpcError) {
-      throw new Error(`Error creating order via RPC: ${rpcError.message}`);
+      console.error('❌ Error en RPC create_order_with_items:', {
+        message: rpcError.message,
+        details: rpcError.details,
+        hint: rpcError.hint,
+        code: rpcError.code,
+        payload: rpcPayload
+      });
+      throw new Error(`Error creating order via RPC: ${rpcError.message} - Details: ${rpcError.details || 'No details'} - Hint: ${rpcError.hint || 'No hint'}`);
     }
+
+    console.log('✅ RPC create_order_with_items exitoso:', rpcData);
 
     const created = Array.isArray(rpcData) ? rpcData[0] : rpcData;
     const { data: order, error } = await this.supabaseService

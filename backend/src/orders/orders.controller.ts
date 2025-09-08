@@ -187,6 +187,10 @@ export class OrdersController {
     subtotal?: number;
     tax?: number;
     discount?: number;
+    deliveryCost?: number;
+    deliverycost?: number;
+    isDelivery?: boolean;
+    isdelivery?: boolean;
   }) {
     // Convertir los nombres de propiedades para que coincidan con el servicio
     // Aceptar tanto camelCase como snake_case
@@ -200,7 +204,9 @@ export class OrdersController {
       totalAmount: createOrderDto.totalAmount ?? createOrderDto.totalamount,
       subtotal: createOrderDto.subtotal,
       tax: createOrderDto.tax,
-      discount: createOrderDto.discount
+      discount: createOrderDto.discount,
+      deliveryCost: createOrderDto.deliveryCost ?? createOrderDto.deliverycost ?? 0,
+      isDelivery: createOrderDto.isDelivery ?? createOrderDto.isdelivery ?? false
     };
 
     // Validar que los campos requeridos estén presentes
@@ -222,7 +228,9 @@ export class OrdersController {
       totalAmount: convertedDto.totalAmount,
       subtotal: convertedDto.subtotal,
       tax: convertedDto.tax,
-      discount: convertedDto.discount
+      discount: convertedDto.discount,
+      deliveryCost: convertedDto.deliveryCost,
+      isDelivery: convertedDto.isDelivery
     };
 
     return this.ordersService.createOrder(validatedDto);

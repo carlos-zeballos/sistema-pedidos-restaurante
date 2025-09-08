@@ -46,6 +46,8 @@ export class OrdersController {
     subtotal?: number;
     tax?: number;
     discount?: number;
+    deliverycost?: number;
+    isdelivery?: boolean;
   }) {
     // Convertir los nombres de propiedades para que coincidan con el servicio
     const convertedDto = {
@@ -66,7 +68,9 @@ export class OrdersController {
       totalAmount: createOrderDto.totalamount,
       subtotal: createOrderDto.subtotal,
       tax: createOrderDto.tax,
-      discount: createOrderDto.discount
+      discount: createOrderDto.discount,
+      deliveryCost: createOrderDto.deliverycost,
+      isDelivery: createOrderDto.isdelivery
     };
     return this.ordersService.createOrder(convertedDto);
   }

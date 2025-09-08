@@ -186,3 +186,4 @@ console.log('Listo para ejecutar en Supabase.');
 
 
 
+

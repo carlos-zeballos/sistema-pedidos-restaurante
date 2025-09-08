@@ -358,4 +358,48 @@ export class OrdersController {
       };
     }
   }
+
+  @Put(':id/payment-methods')
+  async updateOrderPaymentMethods(
+    @Param('id') id: string,
+    @Body() body: { orderPaymentMethodId: string; deliveryPaymentMethodId?: string }
+  ) {
+    try {
+      const result = await this.ordersService.updateOrderPaymentMethods(
+        id,
+        body.orderPaymentMethodId,
+        body.deliveryPaymentMethodId
+      );
+      return { success: true, data: result };
+    } catch (error: any) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  @Delete(':orderId/items/:itemId')
+  async removeItemFromOrder(
+    @Param('orderId') orderId: string,
+    @Param('itemId') itemId: string
+  ) {
+    try {
+      const result = await this.ordersService.removeItemFromOrder(orderId, itemId);
+      return { success: true, data: result };
+    } catch (error: any) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  @Put(':orderId/items/:itemId')
+  async modifyItemInOrder(
+    @Param('orderId') orderId: string,
+    @Param('itemId') itemId: string,
+    @Body() modifications: any
+  ) {
+    try {
+      const result = await this.ordersService.modifyItemInOrder(orderId, itemId, modifications);
+      return { success: true, data: result };
+    } catch (error: any) {
+      throw new BadRequestException(error.message);
+    }
+  }
 }

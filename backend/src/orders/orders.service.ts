@@ -130,6 +130,8 @@ export class OrdersService {
     subtotal?: number;
     tax?: number;
     discount?: number;
+    deliveryCost?: number;
+    isDelivery?: boolean;
   }) {
     // Crear orden + items vía RPC atómico en la BD
     const rpcPayload = {
@@ -151,6 +153,8 @@ export class OrdersService {
         quantity: it.quantity ?? 1,
         notes: it.notes ?? null,
       })),
+      p_delivery_cost: createOrderDto.deliveryCost ?? 0,
+      p_is_delivery: createOrderDto.isDelivery ?? false,
     } as any;
 
     const { data: rpcData, error: rpcError } = await this.supabaseService
@@ -232,6 +236,57 @@ export class OrdersService {
     }
 
     return data as Order;
+  }
+
+  async updateOrderPaymentMethods(orderId: string, orderPaymentMethodId: string, deliveryPaymentMethodId?: string) {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .rpc('update_order_payment_methods', {
+        p_order_id: orderId,
+        p_order_payment_method_id: orderPaymentMethodId,
+        p_delivery_payment_method_id: deliveryPaymentMethodId || null
+      });
+
+    if (error) {
+      throw new Error(`Error updating order payment methods: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  async removeItemFromOrder(orderId: string, itemId: string) {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('OrderItem')
+      .delete()
+      .eq('id', itemId)
+      .eq('orderId', orderId);
+
+    if (error) {
+      throw new Error(`Error removing item from order: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  async modifyItemInOrder(orderId: string, itemId: string, modifications: any) {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('OrderItem')
+      .update({
+        quantity: modifications.quantity,
+        notes: modifications.notes,
+        totalPrice: modifications.quantity * (modifications.unitPrice || 0),
+        updatedAt: new Date().toISOString()
+      })
+      .eq('id', itemId)
+      .eq('orderId', orderId);
+
+    if (error) {
+      throw new Error(`Error modifying item in order: ${error.message}`);
+    }
+
+    return data;
   }
 
   async getOrdersBySpace(spaceId: string) {

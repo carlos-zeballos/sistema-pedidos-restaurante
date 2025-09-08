@@ -132,3 +132,4 @@
 5. **Exportar reportes** a PDF/Excel para análisis offline
 
 
+

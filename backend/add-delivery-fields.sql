@@ -179,3 +179,4 @@ BEGIN
   RAISE NOTICE '✅ Espacios de delivery de ejemplo creados (D1, D2, D3)';
 END $$;
    
+   

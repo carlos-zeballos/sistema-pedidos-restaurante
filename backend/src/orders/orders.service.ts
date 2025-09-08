@@ -15,6 +15,10 @@ export interface Order {
   tax: number;
   discount: number;
   notes?: string;
+  deliveryCost?: number;
+  isDelivery?: boolean;
+  orderPaymentMethodId?: string;
+  deliveryPaymentMethodId?: string;
   createdAt: Date;
   updatedAt: Date;
 }

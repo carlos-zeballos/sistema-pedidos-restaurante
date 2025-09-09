@@ -138,13 +138,12 @@ export class OrdersService {
     isDelivery?: boolean;
   }) {
     // Crear orden + items vía RPC atómico en la BD
-    // IMPORTANTE: Los parámetros deben estar en el orden correcto según la función RPC
-    const rpcPayload = [
-      createOrderDto.createdBy,                    // p_created_by (UUID)
-      createOrderDto.customerName ?? null,         // p_customer_name (TEXT)
-      createOrderDto.customerPhone ?? null,        // p_customer_phone (TEXT)
-      createOrderDto.discount ?? 0,                // p_discount (NUMERIC)
-      (createOrderDto.items ?? []).map((it) => {   // p_items (JSONB)
+    const rpcPayload = {
+      p_created_by: createOrderDto.createdBy,
+      p_customer_name: createOrderDto.customerName ?? null,
+      p_customer_phone: createOrderDto.customerPhone ?? null,
+      p_discount: createOrderDto.discount ?? 0,
+      p_items: (createOrderDto.items ?? []).map((it) => {
         const mappedItem = {
           productId: it.productId ?? it.productid ?? null,
           comboId: it.comboId ?? it.comboid ?? null,
@@ -164,12 +163,12 @@ export class OrdersService {
         
         return mappedItem;
       }),
-      createOrderDto.notes ?? null,                // p_notes (TEXT)
-      createOrderDto.spaceId,                      // p_space_id (UUID)
-      createOrderDto.subtotal ?? 0,                // p_subtotal (NUMERIC)
-      createOrderDto.tax ?? 0,                     // p_tax (NUMERIC)
-      createOrderDto.totalAmount ?? 0,             // p_total_amount (NUMERIC)
-    ];
+      p_notes: createOrderDto.notes ?? null,
+      p_space_id: createOrderDto.spaceId,
+      p_subtotal: createOrderDto.subtotal ?? 0,
+      p_tax: createOrderDto.tax ?? 0,
+      p_total_amount: createOrderDto.totalAmount ?? 0,
+    };
 
     console.log('🚀 Llamando RPC create_order_with_items con payload:', JSON.stringify(rpcPayload, null, 2));
     

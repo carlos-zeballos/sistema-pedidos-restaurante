@@ -67,3 +67,4 @@ EXCEPTION
         RAISE NOTICE '❌ Error en la función RPC: %', SQLERRM;
         RAISE;
 END $$;
+

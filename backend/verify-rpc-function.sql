@@ -52,3 +52,4 @@ SELECT * FROM create_order_with_items(
     p_delivery_cost := 0.00,
     p_is_delivery := false
 );
+

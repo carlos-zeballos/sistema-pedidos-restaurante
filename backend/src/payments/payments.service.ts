@@ -45,6 +45,7 @@ export class PaymentsService {
         paymentDate: new Date().toISOString()
       };
 
+      // Registrar el pago
       const { data, error } = await this.supabaseService
         .getClient()
         .from('OrderPayment')
@@ -53,6 +54,25 @@ export class PaymentsService {
         .single();
 
       if (error) throw error;
+
+      // IMPORTANTE: Actualizar el totalAmount de la orden con el monto modificado
+      // Esto asegura que los reportes muestren el precio final pagado
+      const { error: updateError } = await this.supabaseService
+        .getClient()
+        .from('Order')
+        .update({ 
+          totalAmount: paymentRequest.amount,
+          subtotal: paymentRequest.amount 
+        })
+        .eq('id', paymentRequest.orderId);
+
+      if (updateError) {
+        console.error('Error updating order totalAmount:', updateError);
+        // No lanzar error aquí para no afectar el registro del pago
+      } else {
+        console.log(`✅ Orden ${paymentRequest.orderId} actualizada con totalAmount: ${paymentRequest.amount}`);
+      }
+
       return data;
     } catch (error) {
       console.error('Error registering payment:', error);

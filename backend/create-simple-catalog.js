@@ -767,3 +767,4 @@ console.log('Catálogo simplificado creado y listo para usar.');
 
 
 
+

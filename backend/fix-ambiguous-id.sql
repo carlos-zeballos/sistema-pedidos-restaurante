@@ -174,3 +174,4 @@ WHERE routine_name = 'create_order_with_items'
 AND routine_schema = 'public';
 
 COMMIT;
+

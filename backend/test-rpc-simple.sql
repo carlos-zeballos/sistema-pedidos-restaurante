@@ -76,3 +76,4 @@ BEGIN
         RAISE NOTICE '⚠️ No se encontraron espacios o usuarios para la prueba';
     END IF;
 END $$;
+

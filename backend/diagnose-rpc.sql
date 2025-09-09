@@ -28,3 +28,4 @@ SELECT id, username, "isactive"
 FROM "User" 
 WHERE "isactive" = true
 LIMIT 3;
+

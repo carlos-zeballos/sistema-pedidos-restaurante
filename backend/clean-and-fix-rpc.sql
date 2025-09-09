@@ -247,3 +247,4 @@ WHERE specific_name = (
 ORDER BY ordinal_position;
 
 COMMIT;
+

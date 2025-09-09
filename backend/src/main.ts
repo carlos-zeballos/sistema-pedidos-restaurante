@@ -53,9 +53,12 @@ async function bootstrap() {
         'X-Requested-With',
         'Origin',
         'Access-Control-Request-Method',
-        'Access-Control-Request-Headers'
+        'Access-Control-Request-Headers',
+        'Access-Control-Allow-Origin',
+        'Access-Control-Allow-Methods',
+        'Access-Control-Allow-Headers'
       ],
-      exposedHeaders: ['Authorization'],
+      exposedHeaders: ['Authorization', 'Access-Control-Allow-Origin'],
       preflightContinue: false,
       optionsSuccessStatus: 200
     });
@@ -66,11 +69,29 @@ async function bootstrap() {
       
       if (req.method === 'OPTIONS') {
         console.log('🔄 Handling OPTIONS preflight request');
-        res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+        
+        const origin = req.headers.origin;
+        const allowedOrigins = [
+          'https://precious-travesseiro-c0f1d0.netlify.app',
+          'https://vermillion-snickerdoodle-5f1291.netlify.app',
+          'http://localhost:3000',
+          'http://localhost:5173',
+          'http://localhost:3001'
+        ];
+        
+        if (origin && allowedOrigins.includes(origin)) {
+          res.header('Access-Control-Allow-Origin', origin);
+        } else {
+          res.header('Access-Control-Allow-Origin', '*');
+        }
+        
         res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
-        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With, Origin, Access-Control-Request-Method, Access-Control-Request-Headers');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With, Origin, Access-Control-Request-Method, Access-Control-Request-Headers, Access-Control-Allow-Origin, Access-Control-Allow-Methods, Access-Control-Allow-Headers');
         res.header('Access-Control-Allow-Credentials', 'true');
         res.header('Access-Control-Max-Age', '86400'); // 24 hours
+        res.header('Access-Control-Expose-Headers', 'Authorization, Access-Control-Allow-Origin');
+        
+        console.log('✅ OPTIONS response headers set');
         return res.status(200).end();
       }
       

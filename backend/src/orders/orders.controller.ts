@@ -371,6 +371,22 @@ export class OrdersController {
     }
   }
 
+  // Endpoint específico para probar CORS
+  @Get('test/cors')
+  async testCors() {
+    console.log('🌐 CORS test endpoint called');
+    return {
+      message: 'CORS is working correctly',
+      timestamp: new Date().toISOString(),
+      allowedOrigins: [
+        'https://precious-travesseiro-c0f1d0.netlify.app',
+        'https://vermillion-snickerdoodle-5f1291.netlify.app',
+        'http://localhost:3000',
+        'http://localhost:5173'
+      ]
+    };
+  }
+
   @Put(':id/payment-methods')
   async updateOrderPaymentMethods(
     @Param('id') id: string,

@@ -387,6 +387,38 @@ export class OrdersController {
     };
   }
 
+  // Endpoint de diagnóstico detallado para RPC
+  @Post('test/diagnose')
+  async diagnoseRpc(@Body() body: any) {
+    console.log('🔍 DIAGNÓSTICO RPC - Payload recibido:', JSON.stringify(body, null, 2));
+    
+    try {
+      // Intentar llamar directamente al servicio con logging detallado
+      const result = await this.ordersService.createOrder(body);
+      console.log('✅ DIAGNÓSTICO RPC - Éxito:', result);
+      return {
+        success: true,
+        message: 'RPC function working correctly',
+        result: result,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('❌ DIAGNÓSTICO RPC - Error completo:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        payload: body
+      });
+      return {
+        success: false,
+        error: error.message,
+        stack: error.stack,
+        payload: body,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
   @Put(':id/payment-methods')
   async updateOrderPaymentMethods(
     @Param('id') id: string,

@@ -1,4 +1,6 @@
--- =========================================================
+
+
+S-- =========================================================
 -- CORRECCIÓN DE NOMBRES DE COLUMNA EN LA FUNCIÓN RPC
 -- =========================================================
 -- Este script corrige la función RPC para usar los nombres
@@ -171,5 +173,6 @@ WHERE routine_name = 'create_order_with_items'
 AND routine_schema = 'public';
 
 COMMIT;
+
 
 

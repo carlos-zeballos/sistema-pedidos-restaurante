@@ -326,12 +326,12 @@ export class OrdersController {
       updatedAt: new Date().toISOString(),
       items: createOrderDto.items.map((item, index) => ({
         id: `mock-item-${Date.now()}-${index}`,
-        orderid: `mock-${Date.now()}`,
-        productid: item.productid,
+        orderId: `mock-${Date.now()}`,
+        productId: item.productId,
         name: item.name,
         quantity: item.quantity,
-        unitprice: item.unitprice,
-        totalprice: item.totalprice,
+        unitPrice: item.unitPrice,
+        totalPrice: item.totalPrice,
         status: 'PENDIENTE',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()

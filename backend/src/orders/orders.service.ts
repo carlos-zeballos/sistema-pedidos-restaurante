@@ -138,28 +138,38 @@ export class OrdersService {
     isDelivery?: boolean;
   }) {
     // Crear orden + items vía RPC atómico en la BD
-    const rpcPayload = {
-      p_space_id: createOrderDto.spaceId,
-      p_created_by: createOrderDto.createdBy,
-      p_customer_name: createOrderDto.customerName ?? null,
-      p_customer_phone: createOrderDto.customerPhone ?? null,
-      p_total_amount: createOrderDto.totalAmount ?? 0,
-      p_subtotal: createOrderDto.subtotal ?? 0,
-      p_tax: createOrderDto.tax ?? 0,
-      p_discount: createOrderDto.discount ?? 0,
-      p_notes: createOrderDto.notes ?? null,
-      p_items: (createOrderDto.items ?? []).map((it) => ({
-        productId: it.productId ?? it.productid ?? null,
-        comboId: it.comboId ?? it.comboid ?? null,
-        name: it.name,
-        unitPrice: it.unitPrice ?? it.unitprice ?? 0,
-        totalPrice: it.totalPrice ?? it.totalprice ?? 0,
-        quantity: it.quantity ?? 1,
-        notes: it.notes ?? null,
-      })),
-      p_delivery_cost: createOrderDto.deliveryCost ?? 0,
-      p_is_delivery: createOrderDto.isDelivery ?? false,
-    } as any;
+    // IMPORTANTE: Los parámetros deben estar en el orden correcto según la función RPC
+    const rpcPayload = [
+      createOrderDto.createdBy,                    // p_created_by (UUID)
+      createOrderDto.customerName ?? null,         // p_customer_name (TEXT)
+      createOrderDto.customerPhone ?? null,        // p_customer_phone (TEXT)
+      createOrderDto.discount ?? 0,                // p_discount (NUMERIC)
+      (createOrderDto.items ?? []).map((it) => {   // p_items (JSONB)
+        const mappedItem = {
+          productId: it.productId ?? it.productid ?? null,
+          comboId: it.comboId ?? it.comboid ?? null,
+          name: it.name,
+          unitPrice: it.unitPrice ?? it.unitprice ?? 0,
+          totalPrice: it.totalPrice ?? it.totalprice ?? 0,
+          quantity: it.quantity ?? 1,
+          notes: it.notes ?? null,
+        };
+        
+        console.log('🔍 Mapeando item para RPC:', {
+          originalItem: it,
+          mappedItem: mappedItem,
+          unitPriceSource: it.unitPrice ?? it.unitprice ?? 'NOT_FOUND',
+          totalPriceSource: it.totalPrice ?? it.totalprice ?? 'NOT_FOUND'
+        });
+        
+        return mappedItem;
+      }),
+      createOrderDto.notes ?? null,                // p_notes (TEXT)
+      createOrderDto.spaceId,                      // p_space_id (UUID)
+      createOrderDto.subtotal ?? 0,                // p_subtotal (NUMERIC)
+      createOrderDto.tax ?? 0,                     // p_tax (NUMERIC)
+      createOrderDto.totalAmount ?? 0,             // p_total_amount (NUMERIC)
+    ];
 
     console.log('🚀 Llamando RPC create_order_with_items con payload:', JSON.stringify(rpcPayload, null, 2));
     
@@ -408,16 +418,16 @@ export class OrdersService {
       console.log('✅ Orden encontrada:', { orderId: order.id, status: order.status, totalAmount: order.totalAmount });
 
     const rows = items.map((it) => ({
-      orderid: orderId,
-      productid: it.productId ?? null,
-      comboid: it.comboId ?? null,
+      orderId: orderId,
+      productId: it.productId ?? null,
+      comboId: it.comboId ?? null,
       name: it.name,
-      unitprice: it.unitPrice,
-      totalprice: it.totalPrice,
+      unitPrice: it.unitPrice,
+      totalPrice: it.totalPrice,
       quantity: it.quantity ?? 1,
       status: 'PENDIENTE',
       notes: it.notes ?? null,
-      createdat: new Date().toISOString(), // Timestamp de creación (ya incluye 'Z')
+      createdAt: new Date().toISOString(), // Timestamp de creación (ya incluye 'Z')
     }));
 
       console.log('📝 Preparando items para insertar:', rows);

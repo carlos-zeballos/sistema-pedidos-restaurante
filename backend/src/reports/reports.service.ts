@@ -96,20 +96,22 @@ export class ReportsService {
           p_to_date: filters.to ? new Date(filters.to).toISOString().split('T')[0] : null,
           p_status: filters.status || null,
           p_space_type: filters.spaceType || null,
-          p_limit: limit,
-          p_offset: offset
+          p_page: page,
+          p_limit: limit
         });
 
       if (error) throw error;
 
-      // Obtener el total de la primera fila (si existe)
-      const total = data && data.length > 0 ? data[0].total_count : 0;
+      // La función RPC retorna { orders: JSONB, total: BIGINT }
+      const result = data && data.length > 0 ? data[0] : { orders: [], total: 0 };
+      const total = result.total || 0;
+      const ordersData = result.orders || [];
 
       // Mapear los datos de la función RPC a la interfaz esperada
-      const mappedOrders = (data || []).map(item => ({
+      const mappedOrders = ordersData.map((item: any) => ({
         id: item.id,
         orderNumber: item.orderNumber,
-        createdAt: item.createdAt,
+        createdAt: new Date(item.createdAt),
         spaceCode: item.spaceCode,
         spaceName: item.spaceName,
         spaceType: item.spaceType,

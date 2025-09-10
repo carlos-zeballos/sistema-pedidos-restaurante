@@ -16,20 +16,26 @@ export class ReportsService {
     toDate?: Date
   ): Promise<PaymentMethodReport[]> {
     try {
-      let query = this.supabaseService
+      // Usar la vista optimizada que ya incluye todos los cálculos
+      const { data, error } = await this.supabaseService
         .getClient()
         .from('PaymentSummaryView')
         .select('*');
 
-      if (fromDate && toDate) {
-        // Aplicar filtros de fecha si es necesario
-        // Nota: Las vistas ya filtran por deletedAt, pero podríamos agregar filtros de fecha aquí
-      }
-
-      const { data, error } = await query;
-
       if (error) throw error;
-      return data || [];
+      
+      // Mapear los datos de la vista a la interfaz esperada
+      const mappedData = (data || []).map(item => ({
+        method: item.method,
+        icon: item.icon,
+        color: item.color,
+        ordersCount: item.ordersCount,
+        paidByMethod: item.paidByMethod || 0,
+        originalTotal: item.originalTotal || 0,
+        finalTotal: item.finalTotal || 0
+      }));
+
+      return mappedData;
     } catch (error) {
       console.error('Error getting payment methods report:', error);
       throw new Error('Error al obtener reporte de métodos de pago');
@@ -41,19 +47,26 @@ export class ReportsService {
     toDate?: Date
   ): Promise<DeliveryPaymentReport[]> {
     try {
-      let query = this.supabaseService
+      // Usar la vista optimizada para delivery
+      const { data, error } = await this.supabaseService
         .getClient()
         .from('DeliveryPaymentSummaryView')
         .select('*');
 
-      if (fromDate && toDate) {
-        // Aplicar filtros de fecha si es necesario
-      }
-
-      const { data, error } = await query;
-
       if (error) throw error;
-      return data || [];
+      
+      // Mapear los datos de la vista a la interfaz esperada
+      const mappedData = (data || []).map(item => ({
+        method: item.method,
+        icon: item.icon,
+        color: item.color,
+        deliveryOrdersCount: item.deliveryOrdersCount || 0,
+        deliveryFeesPaid: item.deliveryFeesPaid || 0,
+        orderTotalsPaid: item.orderTotalsPaid || 0,
+        totalPaid: item.totalPaid || 0
+      }));
+
+      return mappedData;
     } catch (error) {
       console.error('Error getting delivery payments report:', error);
       throw new Error('Error al obtener reporte de pagos de delivery');
@@ -97,8 +110,26 @@ export class ReportsService {
 
       if (error) throw error;
 
+      // Mapear los datos de la vista a la interfaz esperada
+      const mappedOrders = (data || []).map(item => ({
+        id: item.id,
+        orderNumber: item.orderNumber,
+        createdAt: item.createdAt,
+        spaceCode: item.spaceCode,
+        spaceName: item.spaceName,
+        spaceType: item.spaceType,
+        customerName: item.customerName,
+        status: item.status,
+        originalTotal: item.originalTotal || 0,
+        finalTotal: item.finalTotal || 0,
+        paidTotal: item.paidTotal || 0,
+        deliveryFeeTotal: item.deliveryFeeTotal || 0,
+        totalPaid: item.totalPaid || 0,
+        payments: item.payments || []
+      }));
+
       return {
-        orders: data || [],
+        orders: mappedOrders,
         total: count || 0,
         page,
         limit

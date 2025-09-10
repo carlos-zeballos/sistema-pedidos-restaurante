@@ -16,15 +16,17 @@ export class ReportsService {
     toDate?: Date
   ): Promise<PaymentMethodReport[]> {
     try {
-      // Usar la vista optimizada que ya incluye todos los cálculos
+      // Usar función RPC para filtros de fecha precisos
       const { data, error } = await this.supabaseService
         .getClient()
-        .from('PaymentSummaryView')
-        .select('*');
+        .rpc('get_payment_methods_report_by_date', {
+          p_from_date: fromDate?.toISOString().split('T')[0] || null,
+          p_to_date: toDate?.toISOString().split('T')[0] || null
+        });
 
       if (error) throw error;
       
-      // Mapear los datos de la vista a la interfaz esperada
+      // Mapear los datos de la función RPC a la interfaz esperada
       const mappedData = (data || []).map(item => ({
         method: item.method,
         icon: item.icon,
@@ -47,15 +49,17 @@ export class ReportsService {
     toDate?: Date
   ): Promise<DeliveryPaymentReport[]> {
     try {
-      // Usar la vista optimizada para delivery
+      // Usar función RPC para filtros de fecha precisos
       const { data, error } = await this.supabaseService
         .getClient()
-        .from('DeliveryPaymentSummaryView')
-        .select('*');
+        .rpc('get_delivery_payments_report_by_date', {
+          p_from_date: fromDate?.toISOString().split('T')[0] || null,
+          p_to_date: toDate?.toISOString().split('T')[0] || null
+        });
 
       if (error) throw error;
       
-      // Mapear los datos de la vista a la interfaz esperada
+      // Mapear los datos de la función RPC a la interfaz esperada
       const mappedData = (data || []).map(item => ({
         method: item.method,
         icon: item.icon,
@@ -84,33 +88,24 @@ export class ReportsService {
       const limit = filters.limit || 50;
       const offset = (page - 1) * limit;
 
-      let query = this.supabaseService
+      // Usar función RPC para filtros de fecha y otros filtros precisos
+      const { data, error } = await this.supabaseService
         .getClient()
-        .from('OrdersReportView')
-        .select('*', { count: 'exact' });
-
-      // Aplicar filtros
-      if (filters.from) {
-        query = query.gte('createdAt', filters.from);
-      }
-      if (filters.to) {
-        query = query.lte('createdAt', filters.to);
-      }
-      if (filters.status) {
-        query = query.eq('status', filters.status);
-      }
-      if (filters.spaceType) {
-        query = query.eq('spaceType', filters.spaceType);
-      }
-
-      // Aplicar paginación
-      query = query.range(offset, offset + limit - 1);
-
-      const { data, error, count } = await query;
+        .rpc('get_orders_report_by_date', {
+          p_from_date: filters.from ? new Date(filters.from).toISOString().split('T')[0] : null,
+          p_to_date: filters.to ? new Date(filters.to).toISOString().split('T')[0] : null,
+          p_status: filters.status || null,
+          p_space_type: filters.spaceType || null,
+          p_limit: limit,
+          p_offset: offset
+        });
 
       if (error) throw error;
 
-      // Mapear los datos de la vista a la interfaz esperada
+      // Obtener el total de la primera fila (si existe)
+      const total = data && data.length > 0 ? data[0].total_count : 0;
+
+      // Mapear los datos de la función RPC a la interfaz esperada
       const mappedOrders = (data || []).map(item => ({
         id: item.id,
         orderNumber: item.orderNumber,
@@ -130,7 +125,7 @@ export class ReportsService {
 
       return {
         orders: mappedOrders,
-        total: count || 0,
+        total: total,
         page,
         limit
       };

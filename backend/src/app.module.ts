@@ -8,6 +8,7 @@ import { CatalogModule } from './catalog/catalog.module';
 import { OrdersModule } from './orders/orders.module';
 import { TablesModule } from './tables/tables.module';
 import { PaymentsModule } from './payments/payments.module';
+import { ReportsModule } from './reports/reports.module';
 import { HealthController } from './health/health.controller';
 import { SupabaseModule } from './lib/supabase.module';
 import { DiagModule } from './diag/diag.module';
@@ -25,6 +26,7 @@ import { DiagModule } from './diag/diag.module';
     OrdersModule,
     TablesModule,
     PaymentsModule,
+    ReportsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

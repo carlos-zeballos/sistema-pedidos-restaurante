@@ -230,3 +230,4 @@ COMMIT;
 -- 3. Creará la versión corregida que soluciona los problemas
 -- 4. Verificará que se creó correctamente
 -- =========================================================
+

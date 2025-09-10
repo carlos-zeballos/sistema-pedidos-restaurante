@@ -68,3 +68,4 @@ console.log('   - JWT_SECRET: tu-jwt-secret');
 console.log('   - PORT: 3001');
 console.log('   - NODE_ENV: production');
 console.log('5. Guarda y redepleya el servicio');
+

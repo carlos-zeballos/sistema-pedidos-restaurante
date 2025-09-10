@@ -176,3 +176,4 @@ GRANT EXECUTE ON FUNCTION public.create_order_with_items(
 ) TO anon, authenticated;
 
 COMMIT;
+

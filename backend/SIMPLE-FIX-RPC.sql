@@ -214,3 +214,4 @@ GRANT EXECUTE ON FUNCTION public.create_order_with_items(
 SELECT pg_notify('pgrst','reload schema');
 
 COMMIT;
+

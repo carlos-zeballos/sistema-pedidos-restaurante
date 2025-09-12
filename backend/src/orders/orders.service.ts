@@ -163,20 +163,20 @@ export class OrdersService {
       return mappedItem;
     });
 
-    const rpcPayload = [
-      createOrderDto.createdBy,                    // 1. p_created_by
-      createOrderDto.customerName ?? null,         // 2. p_customer_name
-      createOrderDto.customerPhone ?? null,       // 3. p_customer_phone
-      createOrderDto.discount ?? 0,                // 4. p_discount
-      mappedItems,                                 // 5. p_items
-      createOrderDto.notes ?? null,                // 6. p_notes
-      createOrderDto.spaceId,                     // 7. p_space_id
-      createOrderDto.subtotal ?? 0,                // 8. p_subtotal
-      createOrderDto.tax ?? 0,                     // 9. p_tax
-      createOrderDto.totalAmount ?? 0,             // 10. p_total_amount
-      createOrderDto.deliveryCost ?? 0,            // 11. p_delivery_cost
-      createOrderDto.isDelivery ?? false,          // 12. p_is_delivery
-    ];
+    const rpcPayload = {
+      p_created_by: createOrderDto.createdBy,
+      p_customer_name: createOrderDto.customerName ?? null,
+      p_customer_phone: createOrderDto.customerPhone ?? null,
+      p_discount: createOrderDto.discount ?? 0,
+      p_items: mappedItems,
+      p_notes: createOrderDto.notes ?? null,
+      p_space_id: createOrderDto.spaceId,
+      p_subtotal: createOrderDto.subtotal ?? 0,
+      p_tax: createOrderDto.tax ?? 0,
+      p_total_amount: createOrderDto.totalAmount ?? 0,
+      p_delivery_cost: createOrderDto.deliveryCost ?? 0,
+      p_is_delivery: createOrderDto.isDelivery ?? false,
+    };
 
     console.log('🚀 Llamando RPC create_order_with_items con payload:', JSON.stringify(rpcPayload, null, 2));
     

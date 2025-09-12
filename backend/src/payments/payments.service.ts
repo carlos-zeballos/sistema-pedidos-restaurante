@@ -224,4 +224,84 @@ export class PaymentsService {
       return 0;
     }
   }
+
+  // Registrar pago de delivery específico
+  async registerDeliveryPayment(
+    orderId: string,
+    paymentMethodId: string,
+    deliveryAmount: number,
+    baseAmount: number = 0,
+    notes?: string
+  ): Promise<any> {
+    try {
+      console.log('🚚 Registrando pago de delivery:', {
+        orderId,
+        paymentMethodId,
+        deliveryAmount,
+        baseAmount,
+        notes
+      });
+
+      const { data, error } = await this.supabaseService
+        .getClient()
+        .rpc('register_delivery_payment', {
+          p_order_id: orderId,
+          p_payment_method_id: paymentMethodId,
+          p_delivery_amount: deliveryAmount,
+          p_base_amount: baseAmount,
+          p_notes: notes || null
+        });
+
+      if (error) {
+        console.error('❌ Error en RPC register_delivery_payment:', error);
+        throw new Error(`Error registrando pago de delivery: ${error.message}`);
+      }
+
+      console.log('✅ Pago de delivery registrado exitosamente:', data);
+      return data;
+    } catch (error) {
+      console.error('Error registering delivery payment:', error);
+      throw new Error('Error al registrar pago de delivery');
+    }
+  }
+
+  // Registrar pago completo (pedido + delivery)
+  async registerCompletePayment(
+    orderId: string,
+    paymentMethodId: string,
+    totalAmount: number,
+    deliveryAmount: number = 0,
+    notes?: string
+  ): Promise<any> {
+    try {
+      console.log('💰 Registrando pago completo:', {
+        orderId,
+        paymentMethodId,
+        totalAmount,
+        deliveryAmount,
+        notes
+      });
+
+      const { data, error } = await this.supabaseService
+        .getClient()
+        .rpc('register_order_payment', {
+          p_order_id: orderId,
+          p_payment_method_id: paymentMethodId,
+          p_total_amount: totalAmount,
+          p_delivery_amount: deliveryAmount,
+          p_notes: notes || null
+        });
+
+      if (error) {
+        console.error('❌ Error en RPC register_order_payment:', error);
+        throw new Error(`Error registrando pago completo: ${error.message}`);
+      }
+
+      console.log('✅ Pago completo registrado exitosamente:', data);
+      return data;
+    } catch (error) {
+      console.error('Error registering complete payment:', error);
+      throw new Error('Error al registrar pago completo');
+    }
+  }
 }

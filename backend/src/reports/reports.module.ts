@@ -10,3 +10,6 @@ import { SupabaseModule } from '../lib/supabase.module';
   exports: [ReportsService]
 })
 export class ReportsModule {}
+
+
+

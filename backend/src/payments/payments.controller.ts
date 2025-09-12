@@ -30,6 +30,52 @@ export class PaymentsController {
     }
   }
 
+  // Registrar pago de delivery específico
+  @Post('delivery')
+  async registerDeliveryPayment(@Body() body: {
+    orderId: string;
+    paymentMethodId: string;
+    deliveryAmount: number;
+    baseAmount?: number;
+    notes?: string;
+  }) {
+    try {
+      const payment = await this.paymentsService.registerDeliveryPayment(
+        body.orderId,
+        body.paymentMethodId,
+        body.deliveryAmount,
+        body.baseAmount,
+        body.notes
+      );
+      return { success: true, data: payment };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Registrar pago completo (pedido + delivery)
+  @Post('complete')
+  async registerCompletePayment(@Body() body: {
+    orderId: string;
+    paymentMethodId: string;
+    totalAmount: number;
+    deliveryAmount?: number;
+    notes?: string;
+  }) {
+    try {
+      const result = await this.paymentsService.registerCompletePayment(
+        body.orderId,
+        body.paymentMethodId,
+        body.totalAmount,
+        body.deliveryAmount,
+        body.notes
+      );
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
   // Obtener reporte de caja por fecha
   @Get('cash-report')
   async getCashReport(

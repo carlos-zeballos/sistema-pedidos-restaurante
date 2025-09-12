@@ -217,3 +217,6 @@ CREATE INDEX IF NOT EXISTS idx_order_spaceid          ON "Order"("spaceId");
 CREATE INDEX IF NOT EXISTS idx_space_type             ON "Space"(type);
 CREATE INDEX IF NOT EXISTS idx_orderpayment_order     ON "OrderPayment"("orderId");
 CREATE INDEX IF NOT EXISTS idx_paymentmethod_isactive ON "PaymentMethod"("isActive");
+
+
+

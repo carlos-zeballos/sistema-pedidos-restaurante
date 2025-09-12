@@ -137,7 +137,7 @@ export class OrdersService {
     deliveryCost?: number;
     isDelivery?: boolean;
   }) {
-    // Crear orden + items vía RPC atómico en la BD (versión original sin delivery)
+    // Crear orden + items vía RPC atómico en la BD (versión con soporte para delivery)
     const rpcPayload = {
       p_created_by: createOrderDto.createdBy,
       p_customer_name: createOrderDto.customerName ?? null,
@@ -168,6 +168,8 @@ export class OrdersService {
       p_subtotal: createOrderDto.subtotal ?? 0,
       p_tax: createOrderDto.tax ?? 0,
       p_total_amount: createOrderDto.totalAmount ?? 0,
+      p_delivery_cost: createOrderDto.deliveryCost ?? 0,
+      p_is_delivery: createOrderDto.isDelivery ?? false,
     };
 
     console.log('🚀 Llamando RPC create_order_with_items con payload:', JSON.stringify(rpcPayload, null, 2));

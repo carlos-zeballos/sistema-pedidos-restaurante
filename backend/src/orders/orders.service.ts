@@ -137,7 +137,7 @@ export class OrdersService {
     deliveryCost?: number;
     isDelivery?: boolean;
   }) {
-    // Crear orden + items vía RPC atómico en la BD
+    // Crear orden + items vía RPC atómico en la BD (versión original sin delivery)
     const rpcPayload = {
       p_created_by: createOrderDto.createdBy,
       p_customer_name: createOrderDto.customerName ?? null,
@@ -168,8 +168,6 @@ export class OrdersService {
       p_subtotal: createOrderDto.subtotal ?? 0,
       p_tax: createOrderDto.tax ?? 0,
       p_total_amount: createOrderDto.totalAmount ?? 0,
-      p_delivery_cost: createOrderDto.deliveryCost ?? 0,
-      p_is_delivery: createOrderDto.isDelivery ?? false,
     };
 
     console.log('🚀 Llamando RPC create_order_with_items con payload:', JSON.stringify(rpcPayload, null, 2));
@@ -192,6 +190,32 @@ export class OrdersService {
     console.log('✅ RPC create_order_with_items exitoso:', rpcData);
 
     const created = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+    
+    // Actualizar campos de delivery si es necesario
+    if (createOrderDto.isDelivery || createOrderDto.deliveryCost) {
+      console.log('🚚 Actualizando campos de delivery:', {
+        isDelivery: createOrderDto.isDelivery,
+        deliveryCost: createOrderDto.deliveryCost
+      });
+      
+      const { error: updateError } = await this.supabaseService
+        .getClient()
+        .from('Order')
+        .update({
+          isDelivery: createOrderDto.isDelivery ?? false,
+          deliveryCost: createOrderDto.deliveryCost ?? 0,
+          updatedAt: new Date().toISOString()
+        })
+        .eq('id', created.id);
+        
+      if (updateError) {
+        console.error('❌ Error actualizando campos de delivery:', updateError);
+        // No lanzamos error aquí para no romper el flujo principal
+      } else {
+        console.log('✅ Campos de delivery actualizados correctamente');
+      }
+    }
+    
     const { data: order, error } = await this.supabaseService
       .getClient()
       .from('Order')

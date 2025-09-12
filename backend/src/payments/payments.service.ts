@@ -225,7 +225,7 @@ export class PaymentsService {
     }
   }
 
-  // Registrar pago de delivery específico
+  // Registrar pago de delivery específico (usando operaciones básicas)
   async registerDeliveryPayment(
     orderId: string,
     paymentMethodId: string,
@@ -242,30 +242,52 @@ export class PaymentsService {
         notes
       });
 
-      const { data, error } = await this.supabaseService
+      // Insertar pago de delivery en OrderPayment
+      const { data: paymentData, error: paymentError } = await this.supabaseService
         .getClient()
-        .rpc('register_delivery_payment', {
-          p_order_id: orderId,
-          p_payment_method_id: paymentMethodId,
-          p_delivery_amount: deliveryAmount,
-          p_base_amount: baseAmount,
-          p_notes: notes || null
-        });
+        .from('OrderPayment')
+        .insert({
+          orderId: orderId,
+          paymentMethodId: paymentMethodId,
+          amount: deliveryAmount,
+          baseAmount: baseAmount,
+          surchargeAmount: deliveryAmount,
+          isDeliveryService: true,
+          notes: notes || null,
+          paymentDate: new Date().toISOString()
+        })
+        .select()
+        .single();
 
-      if (error) {
-        console.error('❌ Error en RPC register_delivery_payment:', error);
-        throw new Error(`Error registrando pago de delivery: ${error.message}`);
+      if (paymentError) {
+        console.error('❌ Error insertando pago de delivery:', paymentError);
+        throw new Error(`Error registrando pago de delivery: ${paymentError.message}`);
       }
 
-      console.log('✅ Pago de delivery registrado exitosamente:', data);
-      return data;
+      // Actualizar estado de pago de la orden
+      const { error: updateError } = await this.supabaseService
+        .getClient()
+        .from('Order')
+        .update({
+          isPaid: true, // Asumimos que si se registra el pago, está pagado
+          updatedAt: new Date().toISOString()
+        })
+        .eq('id', orderId);
+
+      if (updateError) {
+        console.error('❌ Error actualizando estado de pago:', updateError);
+        // No lanzamos error aquí para no romper el flujo
+      }
+
+      console.log('✅ Pago de delivery registrado exitosamente:', paymentData);
+      return paymentData;
     } catch (error) {
       console.error('Error registering delivery payment:', error);
       throw new Error('Error al registrar pago de delivery');
     }
   }
 
-  // Registrar pago completo (pedido + delivery)
+  // Registrar pago completo (pedido + delivery) usando operaciones básicas
   async registerCompletePayment(
     orderId: string,
     paymentMethodId: string,
@@ -282,23 +304,76 @@ export class PaymentsService {
         notes
       });
 
-      const { data, error } = await this.supabaseService
-        .getClient()
-        .rpc('register_order_payment', {
-          p_order_id: orderId,
-          p_payment_method_id: paymentMethodId,
-          p_total_amount: totalAmount,
-          p_delivery_amount: deliveryAmount,
-          p_notes: notes || null
-        });
+      const baseAmount = totalAmount - deliveryAmount;
+      const payments = [];
 
-      if (error) {
-        console.error('❌ Error en RPC register_order_payment:', error);
-        throw new Error(`Error registrando pago completo: ${error.message}`);
+      // Registrar pago del pedido base
+      if (baseAmount > 0) {
+        const { data: basePayment, error: baseError } = await this.supabaseService
+          .getClient()
+          .from('OrderPayment')
+          .insert({
+            orderId: orderId,
+            paymentMethodId: paymentMethodId,
+            amount: baseAmount,
+            baseAmount: baseAmount,
+            surchargeAmount: 0,
+            isDeliveryService: false,
+            notes: notes || null,
+            paymentDate: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (baseError) {
+          console.error('❌ Error insertando pago base:', baseError);
+          throw new Error(`Error registrando pago base: ${baseError.message}`);
+        }
+        payments.push(basePayment);
       }
 
-      console.log('✅ Pago completo registrado exitosamente:', data);
-      return data;
+      // Registrar pago del delivery si existe
+      if (deliveryAmount > 0) {
+        const { data: deliveryPayment, error: deliveryError } = await this.supabaseService
+          .getClient()
+          .from('OrderPayment')
+          .insert({
+            orderId: orderId,
+            paymentMethodId: paymentMethodId,
+            amount: deliveryAmount,
+            baseAmount: 0,
+            surchargeAmount: deliveryAmount,
+            isDeliveryService: true,
+            notes: `Delivery - ${notes || 'Sin notas'}`,
+            paymentDate: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (deliveryError) {
+          console.error('❌ Error insertando pago de delivery:', deliveryError);
+          throw new Error(`Error registrando pago de delivery: ${deliveryError.message}`);
+        }
+        payments.push(deliveryPayment);
+      }
+
+      // Actualizar estado de pago de la orden
+      const { error: updateError } = await this.supabaseService
+        .getClient()
+        .from('Order')
+        .update({
+          isPaid: true,
+          updatedAt: new Date().toISOString()
+        })
+        .eq('id', orderId);
+
+      if (updateError) {
+        console.error('❌ Error actualizando estado de pago:', updateError);
+        // No lanzamos error aquí para no romper el flujo
+      }
+
+      console.log('✅ Pago completo registrado exitosamente:', payments);
+      return payments;
     } catch (error) {
       console.error('Error registering complete payment:', error);
       throw new Error('Error al registrar pago completo');

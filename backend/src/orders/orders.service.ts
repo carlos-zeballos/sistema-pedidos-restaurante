@@ -316,8 +316,8 @@ export class OrdersService {
               .insert({
                 orderId: id,
                 paymentMethodId: paymentMethod.id,
-                amount: order.finalTotal || order.totalAmount || 0,
-                baseAmount: order.finalTotal || order.totalAmount || 0,
+                amount: order.totalAmount || 0,
+                baseAmount: order.totalAmount || 0,
                 surchargeAmount: 0,
                 isDeliveryService: false,
                 notes: 'Pago automático al marcar como PAGADO',
@@ -327,7 +327,7 @@ export class OrdersService {
             if (paymentError) {
               console.warn('Warning: Could not register automatic payment:', paymentError.message);
             } else {
-              console.log(`✅ Pago automático registrado para orden ${id}: ${order.finalTotal || order.totalAmount || 0}`);
+              console.log(`✅ Pago automático registrado para orden ${id}: ${order.totalAmount || 0}`);
             }
           }
         } else {

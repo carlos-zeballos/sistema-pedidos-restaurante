@@ -395,3 +395,4 @@ console.log('Cada sección ahora muestra solo sus elementos correspondientes.');
 
 
 
+

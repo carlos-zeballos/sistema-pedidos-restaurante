@@ -528,3 +528,4 @@ ORDER BY table_name;
 
 -- Verificar métodos de pago insertados
 SELECT name, icon, color FROM "PaymentMethod" ORDER BY name;
+

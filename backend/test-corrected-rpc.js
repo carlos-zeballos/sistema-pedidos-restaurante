@@ -1,146 +1,157 @@
-require('dotenv').config();
-const { createClient } = require('@supabase/supabase-js');
+const { Client } = require('pg');
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('❌ Error: Variables de entorno SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY no encontradas');
-  process.exit(1);
-}
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const client = new Client({
+  connectionString: 'postgresql://postgres.jfvkhoxhiudtxskylnrv:muchachos98356@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=disable'
+});
 
 async function testCorrectedRPC() {
-  console.log('🧪 Probando RPC corregido...\n');
-  
+  console.log('🧪 Probando función RPC con orden correcto de parámetros...\n');
+
   try {
-    // Obtener datos de prueba
-    const { data: spaces } = await supabase
-      .from('Space')
-      .select('id, name, "isActive"')
-      .eq('isActive', true)
-      .limit(1);
+    await client.connect();
+    console.log('✅ Conexión exitosa');
+
+    // 1. Obtener un espacio disponible
+    console.log('1️⃣ Obteniendo espacio disponible...');
+    const spaceResult = await client.query('SELECT id, name FROM "Space" WHERE status = \'LIBRE\' LIMIT 1');
     
-    const { data: users } = await supabase
-      .from('User')
-      .select('id, username, isactive')
-      .eq('isactive', true)
-      .limit(1);
-    
-    const { data: products } = await supabase
-      .from('Product')
-      .select('id, name, price, "isEnabled", "isAvailable"')
-      .eq('isEnabled', true)
-      .eq('isAvailable', true)
-      .limit(1);
-    
-    if (!spaces || spaces.length === 0) {
-      console.error('❌ No hay espacios activos disponibles');
+    if (spaceResult.rows.length === 0) {
+      console.log('❌ No hay espacios libres');
       return;
     }
     
-    if (!users || users.length === 0) {
-      console.error('❌ No hay usuarios activos disponibles');
-      return;
-    }
+    const space = spaceResult.rows[0];
+    console.log(`✅ Usando espacio: ${space.name} (${space.id})`);
+
+    // 2. Obtener un usuario
+    console.log('\n2️⃣ Obteniendo usuario...');
+    const userResult = await client.query('SELECT id, username FROM "User" LIMIT 1');
+    const user = userResult.rows[0];
+    console.log(`✅ Usando usuario: ${user.username} (${user.id})`);
+
+    // 3. Probar la función RPC con el orden correcto
+    console.log('\n3️⃣ Probando función RPC con orden correcto...');
     
-    if (!products || products.length === 0) {
-      console.error('❌ No hay productos disponibles');
-      return;
-    }
-    
-    console.log('📋 Datos de prueba obtenidos:');
-    console.log('  - Espacio:', spaces[0].name, '(isActive:', spaces[0].isActive, ')');
-    console.log('  - Usuario:', users[0].username, '(isactive:', users[0].isactive, ')');
-    console.log('  - Producto:', products[0].name, '(isEnabled:', products[0].isEnabled, ', isAvailable:', products[0].isAvailable, ')');
-    
-    // Crear orden de prueba
-    const testOrder = {
-      p_created_by: users[0].id,
-      p_customer_name: 'Cliente Prueba RPC Corregido',
-      p_customer_phone: '123456789',
-      p_discount: 0,
-      p_items: [{
-        productId: products[0].id,
-        quantity: 2,
-        unitPrice: products[0].price,
-        name: products[0].name,
-        notes: 'Nota de prueba con RPC corregido'
-      }],
-      p_notes: 'Orden de prueba con RPC corregido para esquema real',
-      p_space_id: spaces[0].id,
-      p_subtotal: products[0].price * 2,
-      p_tax: 0,
-      p_total_amount: products[0].price * 2
-    };
-    
-    console.log('\n🔄 Creando orden de prueba...');
-    
-    const { data: orderResult, error: orderError } = await supabase
-      .rpc('create_order_with_items', testOrder);
-    
-    if (orderError) {
-      console.error('❌ Error al crear orden de prueba:', orderError);
-      return;
-    }
-    
-    console.log('✅ Orden creada exitosamente:');
-    console.log('  - ID:', orderResult[0].id);
-    console.log('  - Número:', orderResult[0].ordernumber);
-    
-    // Verificar que la orden se creó correctamente
-    const { data: createdOrder } = await supabase
-      .from('Order')
-      .select(`
-        id,
-        "orderNumber",
-        "customerName",
-        status,
-        "totalAmount",
-        subtotal,
-        items:OrderItem(id, name, quantity, "unitPrice", "totalPrice")
-      `)
-      .eq('id', orderResult[0].id)
-      .single();
-    
-    if (createdOrder) {
-      console.log('\n📋 Orden verificada en base de datos:');
-      console.log('  - Número:', createdOrder.orderNumber);
-      console.log('  - Cliente:', createdOrder.customerName);
-      console.log('  - Estado:', createdOrder.status);
-      console.log('  - Total:', createdOrder.totalAmount);
-      console.log('  - Items:', createdOrder.items.length);
-      
-      if (createdOrder.items.length > 0) {
-        console.log('  - Primer item:', createdOrder.items[0].name, 'x', createdOrder.items[0].quantity);
+    const testItems = [
+      {
+        productId: null,
+        comboId: null,
+        name: 'Producto de Prueba Corregido',
+        unitPrice: 12.99,
+        totalPrice: 12.99,
+        quantity: 1,
+        notes: 'Item de prueba corregido'
       }
+    ];
+
+    // Orden correcto según la firma de la función:
+    // 1. p_created_by, 2. p_customer_name, 3. p_customer_phone, 4. p_discount, 
+    // 5. p_items, 6. p_notes, 7. p_space_id, 8. p_subtotal, 9. p_tax, 10. p_total_amount,
+    // 11. p_delivery_cost, 12. p_is_delivery
+    const rpcQuery = `
+      SELECT * FROM create_order_with_items(
+        $1::uuid,  -- p_created_by
+        $2::text,  -- p_customer_name
+        $3::text,  -- p_customer_phone
+        $4::numeric, -- p_discount
+        $5::jsonb, -- p_items
+        $6::text,  -- p_notes
+        $7::uuid,  -- p_space_id
+        $8::numeric, -- p_subtotal
+        $9::numeric, -- p_tax
+        $10::numeric, -- p_total_amount
+        $11::numeric, -- p_delivery_cost
+        $12::boolean  -- p_is_delivery
+      );
+    `;
+
+    const rpcParams = [
+      user.id,                     // 1. p_created_by
+      'Cliente Prueba Corregido',  // 2. p_customer_name
+      '123456789',                 // 3. p_customer_phone
+      0,                           // 4. p_discount
+      JSON.stringify(testItems),    // 5. p_items
+      'Orden de prueba corregida', // 6. p_notes
+      space.id,                    // 7. p_space_id
+      12.99,                       // 8. p_subtotal
+      0,                           // 9. p_tax
+      12.99,                       // 10. p_total_amount
+      0,                           // 11. p_delivery_cost
+      false                        // 12. p_is_delivery
+    ];
+
+    console.log('📤 Parámetros RPC en orden correcto:');
+    rpcParams.forEach((param, index) => {
+      console.log(`   ${index + 1}: ${typeof param} = ${param}`);
+    });
+
+    const rpcResult = await client.query(rpcQuery, rpcParams);
+    
+    console.log('✅ Función RPC ejecutada exitosamente');
+    console.log('   Resultado:', rpcResult.rows[0]);
+
+    // 4. Verificar que la orden se creó correctamente
+    console.log('\n4️⃣ Verificando orden creada...');
+    const orderResult = await client.query(`
+      SELECT o.*, COUNT(oi.id) as item_count
+      FROM "Order" o
+      LEFT JOIN "OrderItem" oi ON o.id = oi."orderId"
+      WHERE o.id = $1
+      GROUP BY o.id
+    `, [rpcResult.rows[0].id]);
+
+    if (orderResult.rows.length > 0) {
+      const order = orderResult.rows[0];
+      console.log('✅ Orden verificada:');
+      console.log(`   ID: ${order.id}`);
+      console.log(`   Número: ${order.orderNumber}`);
+      console.log(`   Estado: ${order.status}`);
+      console.log(`   Total: ${order.totalAmount}`);
+      console.log(`   Items: ${order.item_count}`);
+      console.log(`   Es delivery: ${order.isDelivery}`);
+      console.log(`   Costo delivery: ${order.deliveryCost}`);
     }
-    
-    console.log('\n🎉 ¡RPC corregido funcionando correctamente!');
-    
+
+    // 5. Probar con orden de delivery
+    console.log('\n5️⃣ Probando orden de delivery...');
+    const deliveryItems = [
+      {
+        productId: null,
+        comboId: null,
+        name: 'Sushi Roll Delivery',
+        unitPrice: 15.99,
+        totalPrice: 15.99,
+        quantity: 1,
+        notes: 'Para delivery'
+      }
+    ];
+
+    const deliveryParams = [
+      user.id,                     // 1. p_created_by
+      'Cliente Delivery',          // 2. p_customer_name
+      '987654321',                 // 3. p_customer_phone
+      0,                           // 4. p_discount
+      JSON.stringify(deliveryItems), // 5. p_items
+      'Orden de delivery',         // 6. p_notes
+      space.id,                    // 7. p_space_id
+      15.99,                       // 8. p_subtotal
+      0,                           // 9. p_tax
+      20.99,                       // 10. p_total_amount (incluye delivery)
+      5.00,                        // 11. p_delivery_cost
+      true                         // 12. p_is_delivery
+    ];
+
+    const deliveryResult = await client.query(rpcQuery, deliveryParams);
+    console.log('✅ Orden de delivery creada exitosamente');
+    console.log('   Resultado:', deliveryResult.rows[0]);
+
   } catch (error) {
-    console.error('❌ Error en prueba:', error.message);
+    console.error('❌ Error:', error.message);
+    console.error('   Detalles:', error.detail);
+    console.error('   Código:', error.code);
+  } finally {
+    await client.end();
   }
 }
 
-async function main() {
-  console.log('🔧 Probando RPC corregido para esquema real...\n');
-  
-  await testCorrectedRPC();
-  
-  console.log('\n✨ Proceso completado');
-}
-
-main().catch(console.error);
-
-
-
-
-
-
-
-
-
-
-
+testCorrectedRPC();

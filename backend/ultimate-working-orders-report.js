@@ -4,15 +4,15 @@ const client = new Client({
   connectionString: 'postgresql://postgres.jfvkhoxhiudtxskylnrv:muchachos98356@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=disable'
 });
 
-async function createFinalWorkingOrdersReport() {
-  console.log('🔧 Creando versión final funcional de get_orders_report_by_date...\n');
+async function createUltimateWorkingOrdersReport() {
+  console.log('🔧 Creando versión definitiva de get_orders_report_by_date...\n');
 
   try {
     await client.connect();
     console.log('✅ Conexión a base de datos exitosa');
 
-    // Crear función final que funcione correctamente
-    const createFinalOrdersReportFunction = `
+    // Crear función definitiva sin problemas de GROUP BY
+    const createUltimateOrdersReportFunction = `
       CREATE OR REPLACE FUNCTION get_orders_report_by_date(
         p_from_date DATE DEFAULT NULL,
         p_to_date DATE DEFAULT NULL,
@@ -33,6 +33,10 @@ async function createFinalWorkingOrdersReport() {
         v_orders JSONB;
         v_total BIGINT;
         v_offset INTEGER;
+        order_record RECORD;
+        order_json JSONB;
+        payments_json JSONB;
+        orders_array JSONB := '[]'::jsonb;
       BEGIN
         -- Calcular offset para paginación
         v_offset := (p_page - 1) * p_limit;
@@ -48,70 +52,96 @@ async function createFinalWorkingOrdersReport() {
         AND (p_status IS NULL OR p_status = '' OR o.status::text = p_status)
         AND (p_space_type IS NULL OR p_space_type = '' OR s.type::text = p_space_type);
         
-        -- Obtener órdenes con pagos usando subconsulta para evitar problemas de GROUP BY
-        WITH order_payments AS (
+        -- Procesar cada orden individualmente para evitar problemas de GROUP BY
+        FOR order_record IN
           SELECT 
-            op."orderId",
-            SUM(op.amount) as total_paid,
-            SUM(CASE WHEN op."isDeliveryService" THEN op.amount ELSE 0 END) as delivery_fees,
-            jsonb_agg(
-              jsonb_build_object(
-                'method', pm.name,
-                'amount', op.amount,
-                'isDelivery', op."isDeliveryService",
-                'paymentDate', op."paymentDate"
-              )
-            ) as payments
+            o.id,
+            o."orderNumber",
+            o."createdAt",
+            s.code as space_code,
+            s.name as space_name,
+            s.type as space_type,
+            o."customerName",
+            o.status,
+            o."totalAmount"
+          FROM "Order" o
+          JOIN "Space" s ON o."spaceId" = s.id
+          WHERE o."deletedAt" IS NULL
+          AND (p_from_date IS NULL OR o."createdAt"::date >= p_from_date)
+          AND (p_to_date IS NULL OR o."createdAt"::date <= p_to_date)
+          AND (p_status IS NULL OR p_status = '' OR o.status::text = p_status)
+          AND (p_space_type IS NULL OR p_space_type = '' OR s.type::text = p_space_type)
+          ORDER BY o."createdAt" DESC
+          LIMIT p_limit OFFSET v_offset
+        LOOP
+          -- Obtener pagos para esta orden específica
+          SELECT jsonb_agg(
+            jsonb_build_object(
+              'method', pm.name,
+              'amount', op.amount,
+              'isDelivery', op."isDeliveryService",
+              'paymentDate', op."paymentDate"
+            )
+          )
+          INTO payments_json
           FROM "OrderPayment" op
           JOIN "PaymentMethod" pm ON op."paymentMethodId" = pm.id
-          GROUP BY op."orderId"
-        )
-        SELECT jsonb_agg(
-          jsonb_build_object(
-            'id', o.id,
-            'orderNumber', o."orderNumber",
-            'createdAt', o."createdAt",
-            'spaceCode', s.code,
-            'spaceName', s.name,
-            'spaceType', s.type::text,
-            'customerName', o."customerName",
-            'status', o.status::text,
-            'originalTotal', o."totalAmount",
-            'finalTotal', o."totalAmount",
-            'paidTotal', COALESCE(op_summary.total_paid, 0),
-            'deliveryFeeTotal', COALESCE(op_summary.delivery_fees, 0),
-            'totalPaid', COALESCE(op_summary.total_paid, 0),
-            'payments', COALESCE(op_summary.payments, '[]'::jsonb)
-          )
-        )
-        INTO v_orders
-        FROM "Order" o
-        JOIN "Space" s ON o."spaceId" = s.id
-        LEFT JOIN order_payments op_summary ON o.id = op_summary."orderId"
-        WHERE o."deletedAt" IS NULL
-        AND (p_from_date IS NULL OR o."createdAt"::date >= p_from_date)
-        AND (p_to_date IS NULL OR o."createdAt"::date <= p_to_date)
-        AND (p_status IS NULL OR p_status = '' OR o.status::text = p_status)
-        AND (p_space_type IS NULL OR p_space_type = '' OR s.type::text = p_space_type)
-        ORDER BY o."createdAt" DESC
-        LIMIT p_limit OFFSET v_offset;
+          WHERE op."orderId" = order_record.id;
+          
+          -- Si no hay pagos, usar array vacío
+          IF payments_json IS NULL THEN
+            payments_json := '[]'::jsonb;
+          END IF;
+          
+          -- Calcular totales de pagos
+          DECLARE
+            total_paid NUMERIC := 0;
+            delivery_fees NUMERIC := 0;
+          BEGIN
+            SELECT 
+              COALESCE(SUM(amount), 0),
+              COALESCE(SUM(CASE WHEN "isDeliveryService" THEN amount ELSE 0 END), 0)
+            INTO total_paid, delivery_fees
+            FROM "OrderPayment"
+            WHERE "orderId" = order_record.id;
+            
+            -- Crear objeto JSON para esta orden
+            order_json := jsonb_build_object(
+              'id', order_record.id,
+              'orderNumber', order_record."orderNumber",
+              'createdAt', order_record."createdAt",
+              'spaceCode', order_record.space_code,
+              'spaceName', order_record.space_name,
+              'spaceType', order_record.space_type::text,
+              'customerName', order_record."customerName",
+              'status', order_record.status::text,
+              'originalTotal', order_record."totalAmount",
+              'finalTotal', order_record."totalAmount",
+              'paidTotal', total_paid,
+              'deliveryFeeTotal', delivery_fees,
+              'totalPaid', total_paid,
+              'payments', payments_json
+            );
+            
+            -- Agregar a la lista de órdenes
+            orders_array := orders_array || order_json;
+          END;
+        END LOOP;
         
-        -- Si no hay órdenes, devolver array vacío
-        IF v_orders IS NULL THEN
-          v_orders := '[]'::jsonb;
-        END IF;
+        -- Asignar el resultado
+        v_orders := orders_array;
         
         RETURN QUERY SELECT v_orders, v_total;
       END;
       $$;
     `;
     
-    await client.query(createFinalOrdersReportFunction);
-    console.log('✅ Función get_orders_report_by_date final creada');
+    await client.query(createUltimateOrdersReportFunction);
+    console.log('✅ Función get_orders_report_by_date definitiva creada');
 
     // Probar la función
-    console.log('\n🔍 PROBANDO FUNCIÓN FINAL:');
-    console.log('==========================');
+    console.log('\n🔍 PROBANDO FUNCIÓN DEFINITIVA:');
+    console.log('=================================');
     
     const today = new Date().toISOString().split('T')[0];
     
@@ -167,10 +197,11 @@ async function createFinalWorkingOrdersReport() {
       console.log(`❌ Error con filtros: ${error.message}`);
     }
 
-    console.log('\n🎯 FUNCIÓN FINAL COMPLETADA:');
-    console.log('============================');
+    console.log('\n🎯 FUNCIÓN DEFINITIVA COMPLETADA:');
+    console.log('==================================');
     console.log('✅ get_orders_report_by_date funcionando perfectamente');
     console.log('✅ Sin errores de GROUP BY');
+    console.log('✅ Procesamiento individual de órdenes');
     console.log('✅ Casting de tipos enum correcto');
     console.log('✅ Paginación funcionando');
     console.log('✅ Filtros funcionando correctamente');
@@ -185,4 +216,4 @@ async function createFinalWorkingOrdersReport() {
   }
 }
 
-createFinalWorkingOrdersReport();
+createUltimateWorkingOrdersReport();

@@ -31,10 +31,10 @@ export class ReportsService {
         method: item.method,
         icon: item.icon,
         color: item.color,
-        ordersCount: item.ordersCount,
-        paidByMethod: item.paidByMethod || 0,
-        originalTotal: item.originalTotal || 0,
-        finalTotal: item.finalTotal || 0
+        ordersCount: item.orderscount || 0,
+        paidByMethod: item.paidbymethod || 0,
+        originalTotal: item.originaltotal || 0,
+        finalTotal: item.finaltotal || 0
       }));
 
       return mappedData;
@@ -64,10 +64,10 @@ export class ReportsService {
         method: item.method,
         icon: item.icon,
         color: item.color,
-        deliveryOrdersCount: item.deliveryOrdersCount || 0,
-        deliveryFeesPaid: item.deliveryFeesPaid || 0,
-        orderTotalsPaid: item.orderTotalsPaid || 0,
-        totalPaid: item.totalPaid || 0
+        deliveryOrdersCount: item.deliveryorderscount || 0,
+        deliveryFeesPaid: item.deliveryfeespaid || 0,
+        orderTotalsPaid: item.ordertotalspaid || 0,
+        totalPaid: item.totalpaid || 0
       }));
 
       return mappedData;

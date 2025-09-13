@@ -287,8 +287,57 @@ export class OrdersService {
       throw new Error(`Error updating order status: ${error.message}`);
     }
 
-    // Si la orden se marca como PAGADA, liberar la mesa
+    // Si la orden se marca como PAGADA, registrar el pago automáticamente
     if (status === 'PAGADO') {
+      try {
+        // Obtener el método de pago por defecto (EFECTIVO)
+        const { data: paymentMethod, error: methodError } = await this.supabaseService
+          .getClient()
+          .from('PaymentMethod')
+          .select('id')
+          .eq('name', 'EFECTIVO')
+          .eq('isActive', true)
+          .single();
+
+        if (!methodError && paymentMethod) {
+          // Verificar si ya existe un pago para esta orden
+          const { data: existingPayment, error: checkError } = await this.supabaseService
+            .getClient()
+            .from('OrderPayment')
+            .select('id')
+            .eq('orderId', id)
+            .limit(1);
+
+          // Solo registrar el pago si no existe uno previo
+          if (!checkError && (!existingPayment || existingPayment.length === 0)) {
+            const { error: paymentError } = await this.supabaseService
+              .getClient()
+              .from('OrderPayment')
+              .insert({
+                orderId: id,
+                paymentMethodId: paymentMethod.id,
+                amount: order.totalAmount || 0,
+                baseAmount: order.totalAmount || 0,
+                surchargeAmount: 0,
+                isDeliveryService: false,
+                notes: 'Pago automático al marcar como PAGADO',
+                paymentDate: new Date().toISOString()
+              });
+
+            if (paymentError) {
+              console.warn('Warning: Could not register automatic payment:', paymentError.message);
+            } else {
+              console.log(`✅ Pago automático registrado para orden ${id}: ${order.totalAmount || 0}`);
+            }
+          }
+        } else {
+          console.warn('Warning: Could not find EFECTIVO payment method for automatic payment');
+        }
+      } catch (paymentError) {
+        console.warn('Warning: Error in automatic payment registration:', paymentError.message);
+      }
+
+      // Liberar la mesa
       await this.supabaseService
         .getClient()
         .from('Space')

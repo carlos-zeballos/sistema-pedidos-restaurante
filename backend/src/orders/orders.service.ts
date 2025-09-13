@@ -9,7 +9,7 @@ export interface Order {
   assignedTo?: string;
   customerName?: string;
   customerPhone?: string;
-  status: 'PENDIENTE' | 'EN_PREPARACION' | 'LISTO' | 'ENTREGADO' | 'PAGADO' | 'CANCELADO';
+  status: 'PENDIENTE' | 'EN_PREPARACION' | 'LISTO' | 'ENTREGADO' | 'CANCELADO';
   totalAmount: number;
   subtotal: number;
   tax: number;
@@ -246,7 +246,6 @@ export class OrdersService {
       | 'EN_PREPARACION'
       | 'LISTO'
       | 'ENTREGADO'
-      | 'PAGADO'
       | 'CANCELADO',
     assignedTo?: string,
   ) {
@@ -288,7 +287,7 @@ export class OrdersService {
     }
 
     // Si la orden se marca como PAGADA, registrar el pago automáticamente
-    if (status === 'PAGADO') {
+    if (status === 'ENTREGADO') {
       try {
         // Obtener el método de pago por defecto (EFECTIVO)
         const { data: paymentMethod, error: methodError } = await this.supabaseService
@@ -320,7 +319,7 @@ export class OrdersService {
                 baseAmount: order.totalAmount || 0,
                 surchargeAmount: 0,
                 isDeliveryService: false,
-                notes: 'Pago automático al marcar como PAGADO',
+                notes: 'Pago automático al marcar como ENTREGADO',
                 paymentDate: new Date().toISOString()
               });
 

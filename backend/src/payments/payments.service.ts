@@ -33,59 +33,47 @@ export class PaymentsService {
     }
   }
 
-  // Registrar un pago usando función RPC
+  // Registrar un pago
   async registerPayment(paymentRequest: PaymentRequest, waiterId?: string): Promise<OrderPayment> {
     try {
-      console.log('💰 Registrando pago via RPC:', paymentRequest);
-      
-      // Usar función RPC para registrar el pago
+      const paymentData = {
+        orderId: paymentRequest.orderId,
+        paymentMethodId: paymentRequest.paymentMethodId,
+        amount: paymentRequest.amount,
+        notes: paymentRequest.notes,
+        waiterId: waiterId,
+        paymentDate: new Date().toISOString()
+      };
+
+      // Registrar el pago
       const { data, error } = await this.supabaseService
         .getClient()
-        .rpc('register_payment', {
-          p_order_id: paymentRequest.orderId,
-          p_payment_method_id: paymentRequest.paymentMethodId,
-          p_amount: paymentRequest.amount,
-          p_is_delivery_service: false,
-          p_notes: paymentRequest.notes || null
-        });
-
-      if (error) {
-        console.error('❌ Error en función RPC register_payment:', error);
-        throw new Error(`Error registrando pago: ${error.message}`);
-      }
-
-      if (!data || data.length === 0) {
-        throw new Error('No se recibió respuesta de la función RPC');
-      }
-
-      const result = data[0];
-      if (!result.success) {
-        throw new Error(result.message || 'Error desconocido al registrar pago');
-      }
-
-      console.log('✅ Pago registrado exitosamente via RPC:', result);
-
-      // Obtener el pago registrado para devolverlo
-      const { data: paymentData, error: fetchError } = await this.supabaseService
-        .getClient()
         .from('OrderPayment')
-        .select(`
-          *,
-          PaymentMethod (
-            name,
-            icon,
-            color
-          )
-        `)
-        .eq('id', result.payment_id)
+        .insert(paymentData)
+        .select()
         .single();
 
-      if (fetchError) {
-        console.error('❌ Error obteniendo pago registrado:', fetchError);
-        throw new Error('Error obteniendo pago registrado');
+      if (error) throw error;
+
+      // IMPORTANTE: Actualizar el totalAmount de la orden con el monto modificado
+      // Esto asegura que los reportes muestren el precio final pagado
+      const { error: updateError } = await this.supabaseService
+        .getClient()
+        .from('Order')
+        .update({ 
+          totalAmount: paymentRequest.amount,
+          subtotal: paymentRequest.amount 
+        })
+        .eq('id', paymentRequest.orderId);
+
+      if (updateError) {
+        console.error('Error updating order totalAmount:', updateError);
+        // No lanzar error aquí para no afectar el registro del pago
+      } else {
+        console.log(`✅ Orden ${paymentRequest.orderId} actualizada con totalAmount: ${paymentRequest.amount}`);
       }
 
-      return paymentData;
+      return data;
     } catch (error) {
       console.error('Error registering payment:', error);
       throw new Error('Error al registrar el pago');
@@ -369,12 +357,13 @@ export class PaymentsService {
         payments.push(deliveryPayment);
       }
 
-      // Actualizar estado de pago de la orden
+      // Actualizar estado de pago de la orden y cambiar estado a ENTREGADO
       const { error: updateError } = await this.supabaseService
         .getClient()
         .from('Order')
         .update({
           isPaid: true,
+          status: 'ENTREGADO',
           updatedAt: new Date().toISOString()
         })
         .eq('id', orderId);
@@ -382,6 +371,23 @@ export class PaymentsService {
       if (updateError) {
         console.error('❌ Error actualizando estado de pago:', updateError);
         // No lanzamos error aquí para no romper el flujo
+      } else {
+        // Registrar el cambio de estado en el historial
+        try {
+          await this.supabaseService
+            .getClient()
+            .from('OrderStatusHistory')
+            .insert({
+              orderId: orderId,
+              status: 'ENTREGADO',
+              changedBy: null, // Se puede obtener del contexto si es necesario
+              notes: 'Estado actualizado automáticamente por pago completo',
+              createdAt: new Date().toISOString()
+            });
+        } catch (historyError) {
+          console.error('❌ Error registrando cambio de estado:', historyError);
+          // No lanzamos error aquí para no romper el flujo
+        }
       }
 
       console.log('✅ Pago completo registrado exitosamente:', payments);

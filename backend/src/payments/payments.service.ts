@@ -290,7 +290,8 @@ export class PaymentsService {
   // Registrar pago completo (pedido + delivery) usando operaciones básicas
   async registerCompletePayment(
     orderId: string,
-    paymentMethodId: string,
+    basePaymentMethodId: string,
+    deliveryPaymentMethodId: string,
     totalAmount: number,
     deliveryAmount: number = 0,
     notes?: string
@@ -298,39 +299,71 @@ export class PaymentsService {
     try {
       console.log('💰 Registrando pago completo:', {
         orderId,
-        paymentMethodId,
+        basePaymentMethodId,
+        deliveryPaymentMethodId,
         totalAmount,
         deliveryAmount,
         notes
       });
 
       const baseAmount = totalAmount - deliveryAmount;
+      const payments = [];
 
-      // Registrar UN SOLO pago que incluya tanto el monto base como el delivery
-      const { data: payment, error: paymentError } = await this.supabaseService
-        .getClient()
-        .from('OrderPayment')
-        .insert({
-          orderId: orderId,
-          paymentMethodId: paymentMethodId,
-          amount: totalAmount, // Monto total pagado
-          baseAmount: baseAmount, // Monto base del pedido
-          surchargeAmount: deliveryAmount, // Monto de delivery
-          isDeliveryService: deliveryAmount > 0, // Es delivery si hay monto de delivery
-          notes: notes || null,
-          paymentDate: new Date().toISOString()
-        })
-        .select()
-        .single();
+      // 1. Registrar pago del PEDIDO BASE (método independiente)
+      if (baseAmount > 0) {
+        const { data: basePayment, error: basePaymentError } = await this.supabaseService
+          .getClient()
+          .from('OrderPayment')
+          .insert({
+            orderId: orderId,
+            paymentMethodId: basePaymentMethodId, // Método específico para pedido
+            amount: baseAmount, // Solo monto del pedido
+            baseAmount: baseAmount,
+            surchargeAmount: 0,
+            isDeliveryService: false, // NO es delivery
+            notes: notes || null,
+            paymentDate: new Date().toISOString()
+          })
+          .select()
+          .single();
 
-      if (paymentError) {
-        console.error('❌ Error insertando pago:', paymentError);
-        throw new Error(`Error registrando pago: ${paymentError.message}`);
+        if (basePaymentError) {
+          console.error('❌ Error insertando pago base:', basePaymentError);
+          throw new Error(`Error registrando pago base: ${basePaymentError.message}`);
+        }
+
+        payments.push(basePayment);
+        console.log('✅ Pago base registrado:', basePayment);
       }
 
-      console.log('✅ Pago registrado exitosamente:', payment);
+      // 2. Registrar pago del DELIVERY (método independiente)
+      if (deliveryAmount > 0) {
+        const { data: deliveryPayment, error: deliveryPaymentError } = await this.supabaseService
+          .getClient()
+          .from('OrderPayment')
+          .insert({
+            orderId: orderId,
+            paymentMethodId: deliveryPaymentMethodId, // Método específico para delivery
+            amount: deliveryAmount, // Solo monto de delivery
+            baseAmount: 0,
+            surchargeAmount: deliveryAmount,
+            isDeliveryService: true, // SÍ es delivery
+            notes: notes || null,
+            paymentDate: new Date().toISOString()
+          })
+          .select()
+          .single();
 
-      console.log('✅ Pago registrado exitosamente:', payment);
+        if (deliveryPaymentError) {
+          console.error('❌ Error insertando pago de delivery:', deliveryPaymentError);
+          throw new Error(`Error registrando pago de delivery: ${deliveryPaymentError.message}`);
+        }
+
+        payments.push(deliveryPayment);
+        console.log('✅ Pago de delivery registrado:', deliveryPayment);
+      }
+
+      console.log('✅ Pagos registrados exitosamente:', payments);
 
       // Actualizar estado de pago de la orden y cambiar estado a ENTREGADO
       const { error: updateError } = await this.supabaseService
@@ -365,8 +398,8 @@ export class PaymentsService {
         }
       }
 
-      console.log('✅ Pago completo registrado exitosamente:', payment);
-      return payment;
+      console.log('✅ Pago completo registrado exitosamente:', payments);
+      return payments;
     } catch (error) {
       console.error('Error registering complete payment:', error);
       throw new Error('Error al registrar pago completo');

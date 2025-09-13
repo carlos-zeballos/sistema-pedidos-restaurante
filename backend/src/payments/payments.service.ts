@@ -306,64 +306,31 @@ export class PaymentsService {
 
       const baseAmount = totalAmount - deliveryAmount;
 
-      // Registrar DOS pagos separados: uno para el pedido base y otro para delivery
-      const payments = [];
+      // Registrar UN SOLO pago que incluya tanto el monto base como el delivery
+      const { data: payment, error: paymentError } = await this.supabaseService
+        .getClient()
+        .from('OrderPayment')
+        .insert({
+          orderId: orderId,
+          paymentMethodId: paymentMethodId,
+          amount: totalAmount, // Monto total pagado
+          baseAmount: baseAmount, // Monto base del pedido
+          surchargeAmount: deliveryAmount, // Monto de delivery
+          isDeliveryService: deliveryAmount > 0, // Es delivery si hay monto de delivery
+          notes: notes || null,
+          paymentDate: new Date().toISOString()
+        })
+        .select()
+        .single();
 
-      // 1. Pago del pedido base (si hay monto base)
-      if (baseAmount > 0) {
-        const { data: basePayment, error: basePaymentError } = await this.supabaseService
-          .getClient()
-          .from('OrderPayment')
-          .insert({
-            orderId: orderId,
-            paymentMethodId: paymentMethodId,
-            amount: baseAmount, // Solo monto base
-            baseAmount: baseAmount, // Solo monto base
-            surchargeAmount: 0, // Sin delivery
-            isDeliveryService: false, // No es delivery
-            notes: notes || null,
-            paymentDate: new Date().toISOString()
-          })
-          .select()
-          .single();
-
-        if (basePaymentError) {
-          console.error('❌ Error insertando pago base:', basePaymentError);
-          throw new Error(`Error registrando pago base: ${basePaymentError.message}`);
-        }
-
-        payments.push(basePayment);
-        console.log('✅ Pago base registrado:', basePayment);
+      if (paymentError) {
+        console.error('❌ Error insertando pago:', paymentError);
+        throw new Error(`Error registrando pago: ${paymentError.message}`);
       }
 
-      // 2. Pago del delivery (si hay monto de delivery)
-      if (deliveryAmount > 0) {
-        const { data: deliveryPayment, error: deliveryPaymentError } = await this.supabaseService
-          .getClient()
-          .from('OrderPayment')
-          .insert({
-            orderId: orderId,
-            paymentMethodId: paymentMethodId,
-            amount: deliveryAmount, // Solo monto de delivery
-            baseAmount: 0, // Sin monto base
-            surchargeAmount: deliveryAmount, // Solo delivery
-            isDeliveryService: true, // Es delivery
-            notes: notes || null,
-            paymentDate: new Date().toISOString()
-          })
-          .select()
-          .single();
+      console.log('✅ Pago registrado exitosamente:', payment);
 
-        if (deliveryPaymentError) {
-          console.error('❌ Error insertando pago de delivery:', deliveryPaymentError);
-          throw new Error(`Error registrando pago de delivery: ${deliveryPaymentError.message}`);
-        }
-
-        payments.push(deliveryPayment);
-        console.log('✅ Pago de delivery registrado:', deliveryPayment);
-      }
-
-      console.log('✅ Pagos registrados exitosamente:', payments);
+      console.log('✅ Pago registrado exitosamente:', payment);
 
       // Actualizar estado de pago de la orden y cambiar estado a ENTREGADO
       const { error: updateError } = await this.supabaseService
@@ -398,8 +365,8 @@ export class PaymentsService {
         }
       }
 
-      console.log('✅ Pago completo registrado exitosamente:', payments);
-      return payments;
+      console.log('✅ Pago completo registrado exitosamente:', payment);
+      return payment;
     } catch (error) {
       console.error('Error registering complete payment:', error);
       throw new Error('Error al registrar pago completo');

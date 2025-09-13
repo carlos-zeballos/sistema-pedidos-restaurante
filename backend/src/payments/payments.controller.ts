@@ -57,7 +57,8 @@ export class PaymentsController {
   @Post('complete')
   async registerCompletePayment(@Body() body: {
     orderId: string;
-    paymentMethodId: string;
+    basePaymentMethodId: string;
+    deliveryPaymentMethodId: string;
     totalAmount: number;
     deliveryAmount?: number;
     notes?: string;
@@ -65,7 +66,8 @@ export class PaymentsController {
     try {
       const result = await this.paymentsService.registerCompletePayment(
         body.orderId,
-        body.paymentMethodId,
+        body.basePaymentMethodId,
+        body.deliveryPaymentMethodId,
         body.totalAmount,
         body.deliveryAmount,
         body.notes

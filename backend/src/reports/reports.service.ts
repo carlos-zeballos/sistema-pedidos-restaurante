@@ -19,7 +19,8 @@ export class ReportsService {
       'Plin': '📱',
       'Transferencia': '🏦',
       'Tarjeta': '💳',
-      'Billetera Digital': '📲'
+      'Billetera Digital': '📲',
+      'Sin Pago': '❌'
     };
     return iconMap[method] || '💳';
   }
@@ -31,7 +32,8 @@ export class ReportsService {
       'Plin': '#F59E0B',
       'Transferencia': '#3B82F6',
       'Tarjeta': '#EF4444',
-      'Billetera Digital': '#06B6D4'
+      'Billetera Digital': '#06B6D4',
+      'Sin Pago': '#EF4444'
     };
     return colorMap[method] || '#6B7280';
   }
@@ -58,20 +60,32 @@ export class ReportsService {
       }>();
 
       orders.forEach(order => {
-        if (!order.payments || !Array.isArray(order.payments)) return;
+        // CORRECCIÓN: Incluir TODAS las órdenes, incluso sin pagos registrados
+        let method = 'Sin Pago';
+        let amount = 0;
 
-        // Solo considerar pagos base (no delivery)
-        const basePayments = order.payments.filter((payment: any) => !payment.isDelivery);
-        if (basePayments.length === 0) return;
+        if (order.payments && Array.isArray(order.payments) && order.payments.length > 0) {
+          // Solo considerar pagos base (no delivery)
+          const basePayments = order.payments.filter((payment: any) => !payment.isDelivery);
+          
+          if (basePayments.length > 0) {
+            // Tomar solo el pago más reciente (misma lógica que Ventas Totales)
+            const sortedPayments = basePayments
+              .sort((a: any, b: any) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
+            const latestPayment = sortedPayments[0];
 
-        // Tomar solo el pago más reciente (misma lógica que Ventas Totales)
-        const sortedPayments = basePayments
-          .sort((a: any, b: any) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
-        const latestPayment = sortedPayments[0];
+            if (latestPayment) {
+              method = latestPayment.method;
+              amount = latestPayment.amount;
+            }
+          }
+        }
 
-        if (!latestPayment) return;
+        // Si no hay pagos, usar el total de la orden como "Sin Pago"
+        if (method === 'Sin Pago') {
+          amount = order.finalTotal;
+        }
 
-        const method = latestPayment.method;
         if (!methodMap.has(method)) {
           methodMap.set(method, {
             method,
@@ -85,7 +99,7 @@ export class ReportsService {
         const methodData = methodMap.get(method);
         if (!methodData) return;
         methodData.ordersCount.add(order.id);
-        methodData.finalTotal += latestPayment.amount; // Solo el monto del pago final
+        methodData.finalTotal += amount;
       });
 
       return Array.from(methodMap.values()).map(method => ({
@@ -128,21 +142,31 @@ export class ReportsService {
       const deliveryOrders = orders.filter(order => order.spaceType === 'DELIVERY');
       
       deliveryOrders.forEach(order => {
-        if (!order.payments || !Array.isArray(order.payments)) return;
+        // CORRECCIÓN: Incluir TODAS las órdenes de delivery, incluso sin pagos registrados
+        let method = 'Sin Pago';
+        let amount = 0;
 
-        // Solo considerar pagos de delivery
-        const deliveryPayments = order.payments.filter((payment: any) => payment.isDelivery);
-        if (deliveryPayments.length === 0) return;
+        if (order.payments && Array.isArray(order.payments) && order.payments.length > 0) {
+          // Solo considerar pagos de delivery
+          const deliveryPayments = order.payments.filter((payment: any) => payment.isDelivery);
+          
+          if (deliveryPayments.length > 0) {
+            // Tomar solo el pago de delivery más reciente (misma lógica que Ventas Totales)
+            const sortedDeliveryPayments = deliveryPayments
+              .sort((a: any, b: any) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
+            const latestDeliveryPayment = sortedDeliveryPayments[0];
 
-        // Tomar solo el pago de delivery más reciente (misma lógica que Ventas Totales)
-        const sortedDeliveryPayments = deliveryPayments
-          .sort((a: any, b: any) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
-        const latestDeliveryPayment = sortedDeliveryPayments[0];
+            if (latestDeliveryPayment) {
+              method = latestDeliveryPayment.method;
+              amount = (latestDeliveryPayment as any).surchargeAmount || latestDeliveryPayment.amount;
+            }
+          }
+        }
 
-        if (!latestDeliveryPayment) return;
-
-        const method = latestDeliveryPayment.method;
-        const amount = (latestDeliveryPayment as any).surchargeAmount || latestDeliveryPayment.amount;
+        // Si no hay pagos de delivery, usar el deliveryFeeTotal de la orden
+        if (method === 'Sin Pago') {
+          amount = order.deliveryFeeTotal || 0;
+        }
         
         if (!methodMap.has(method)) {
           methodMap.set(method, {
@@ -157,7 +181,7 @@ export class ReportsService {
         const methodData = methodMap.get(method);
         if (!methodData) return;
         methodData.deliveryOrdersCount.add(order.id);
-        methodData.finalTotal += amount; // Solo el monto del delivery final
+        methodData.finalTotal += amount;
       });
 
       return Array.from(methodMap.values()).map(method => ({

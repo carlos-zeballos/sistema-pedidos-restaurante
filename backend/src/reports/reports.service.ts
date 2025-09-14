@@ -108,22 +108,35 @@ export class ReportsService {
       const ordersData = result.orders || [];
 
       // Mapear los datos de la función RPC a la interfaz esperada
-      const mappedOrders = ordersData.map((item: any) => ({
-        id: item.id,
-        orderNumber: item.orderNumber,
-        createdAt: new Date(item.createdAt),
-        spaceCode: item.spaceCode,
-        spaceName: item.spaceName,
-        spaceType: item.spaceType,
-        customerName: item.customerName,
-        status: item.status,
-        originalTotal: item.originalTotal || 0,
-        finalTotal: item.finalTotal || 0,
-        paidTotal: item.paidTotal || 0,
-        deliveryFeeTotal: item.deliveryFeeTotal || 0,
-        totalPaid: item.totalPaid || 0,
-        payments: item.payments || []
-      }));
+      const mappedOrders = ordersData.map((item: any) => {
+        // CORRECCIÓN: Calcular paidTotal correctamente desde los pagos
+        let correctPaidTotal = 0;
+        if (item.payments && Array.isArray(item.payments)) {
+          // Solo sumar el monto del pago más reciente (no todos los pagos)
+          const latestPayment = item.payments
+            .sort((a: any, b: any) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime())[0];
+          if (latestPayment) {
+            correctPaidTotal = latestPayment.amount || 0;
+          }
+        }
+
+        return {
+          id: item.id,
+          orderNumber: item.orderNumber,
+          createdAt: new Date(item.createdAt),
+          spaceCode: item.spaceCode,
+          spaceName: item.spaceName,
+          spaceType: item.spaceType,
+          customerName: item.customerName,
+          status: item.status,
+          originalTotal: item.originalTotal || 0,
+          finalTotal: item.finalTotal || 0,
+          paidTotal: correctPaidTotal, // ✅ CORREGIDO: Solo el pago más reciente
+          deliveryFeeTotal: item.deliveryFeeTotal || 0,
+          totalPaid: item.totalPaid || 0,
+          payments: item.payments || []
+        };
+      });
 
       return {
         orders: mappedOrders,

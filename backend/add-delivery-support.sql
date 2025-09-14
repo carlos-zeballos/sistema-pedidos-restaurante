@@ -530,3 +530,4 @@ ORDER BY table_name;
 SELECT name, icon, color FROM "PaymentMethod" ORDER BY name;
 
 
+

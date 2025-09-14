@@ -279,7 +279,7 @@ export class OrdersController {
   async updateOrderStatusTest(
     @Param('orderId') orderId: string,
     @Body() statusDto: { 
-      status: 'PENDIENTE' | 'EN_PREPARACION' | 'LISTO' | 'ENTREGADO' | 'CANCELADO';
+      status: 'PENDIENTE' | 'EN_PREPARACION' | 'LISTO' | 'PAGADO' | 'CANCELADO';
       assignedTo?: string;
     },
   ) {

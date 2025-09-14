@@ -79,7 +79,7 @@ export class OrdersController {
   @Put(':id/status')
   @Roles('COCINERO', 'MOZO', 'ADMIN')
   async updateOrderStatus(@Param('id') id: string, @Body() statusDto: { 
-    status: 'PENDIENTE' | 'EN_PREPARACION' | 'LISTO' | 'ENTREGADO' | 'CANCELADO';
+    status: 'PENDIENTE' | 'EN_PREPARACION' | 'LISTO' | 'PAGADO' | 'CANCELADO';
     assignedTo?: string;
     assignedto?: string; // aceptar ambos formatos
   }) {

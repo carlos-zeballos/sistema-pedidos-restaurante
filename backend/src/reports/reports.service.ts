@@ -1,205 +1,159 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../lib/supabase.service';
-import { 
-  PaymentMethodReport, 
-  DeliveryPaymentReport, 
-  OrderReport, 
-  ReportsFilters 
-} from './reports.controller';
+
+export interface PaymentMethodReport {
+  method: string;
+  icon: string;
+  color: string;
+  ordersCount: number;
+  finalTotal: number;
+  originalTotal: number;
+  paidByMethod: number;
+}
+
+export interface DeliveryPaymentReport {
+  method: string;
+  icon: string;
+  color: string;
+  deliveryOrdersCount: number;
+  deliveryFeesPaid: number;
+  orderTotalsPaid: number;
+  totalPaid: number;
+}
+
+export interface OrderReport {
+  id: string;
+  orderNumber: string;
+  createdAt: Date;
+  spaceCode: string;
+  spaceName: string;
+  spaceType: string;
+  customerName: string;
+  status: string;
+  originalTotal: number;
+  finalTotal: number;
+  paidTotal: number;
+  deliveryFeeTotal: number;
+  totalPaid: number;
+  payments: Array<{
+    method: string;
+    amount: number;
+    baseAmount?: number;
+    surchargeAmount?: number;
+    isDelivery: boolean;
+    paymentDate: Date;
+  }>;
+}
+
+export interface ReportsFilters {
+  from?: string;
+  to?: string;
+  status?: string;
+  method?: string;
+  spaceType?: string;
+  page?: number;
+  limit?: number;
+}
 
 @Injectable()
 export class ReportsService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
-  // Helper methods para iconos y colores de métodos de pago
-  private getPaymentMethodIcon(method: string): string {
-    const iconMap: { [key: string]: string } = {
-      'Efectivo': '💰',
-      'Yape': '📱',
-      'Plin': '📱',
-      'Transferencia': '🏦',
-      'Tarjeta': '💳',
-      'Billetera Digital': '📲',
-      'Sin Pago': '❌'
-    };
-    return iconMap[method] || '💳';
-  }
-
-  private getPaymentMethodColor(method: string): string {
-    const colorMap: { [key: string]: string } = {
-      'Efectivo': '#10B981',
-      'Yape': '#8B5CF6',
-      'Plin': '#F59E0B',
-      'Transferencia': '#3B82F6',
-      'Tarjeta': '#EF4444',
-      'Billetera Digital': '#06B6D4',
-      'Sin Pago': '#EF4444'
-    };
-    return colorMap[method] || '#6B7280';
-  }
-
+  // =====================================================
+  // REPORTE DE MÉTODOS DE PAGO
+  // =====================================================
   async getPaymentMethodsReport(
     fromDate?: Date,
     toDate?: Date
   ): Promise<PaymentMethodReport[]> {
     try {
-      // CORRECCIÓN: Usar la misma fuente de datos que Ventas Totales para consistencia
-      const { orders } = await this.getOrdersReport({
-        from: fromDate?.toISOString().split('T')[0],
-        to: toDate?.toISOString().split('T')[0],
-        limit: 10000 // Obtener todas las órdenes para el reporte
+      console.log('💳 ReportsService.getPaymentMethodsReport - Obteniendo reporte de métodos de pago:', {
+        fromDate: fromDate?.toISOString().split('T')[0],
+        toDate: toDate?.toISOString().split('T')[0]
       });
 
-      // Generar reporte de métodos de pago desde los datos unificados
-      const methodMap = new Map<string, {
-        method: string;
-        icon: string;
-        color: string;
-        ordersCount: Set<string>;
-        finalTotal: number;
-      }>();
+      // Usar función RPC optimizada
+      const { data, error } = await this.supabaseService
+        .getClient()
+        .rpc('get_payment_methods_report_by_date', {
+          p_from_date: fromDate ? fromDate.toISOString().split('T')[0] : null,
+          p_to_date: toDate ? toDate.toISOString().split('T')[0] : null
+        });
 
-      orders.forEach(order => {
-        // CORRECCIÓN: Incluir TODAS las órdenes, incluso sin pagos registrados
-        let method = 'Sin Pago';
-        let amount = 0;
+      if (error) {
+        console.error('❌ Error en get_payment_methods_report_by_date:', error);
+        throw error;
+      }
 
-        if (order.payments && Array.isArray(order.payments) && order.payments.length > 0) {
-          // Solo considerar pagos base (no delivery)
-          const basePayments = order.payments.filter((payment: any) => !payment.isDelivery);
-          
-          if (basePayments.length > 0) {
-            // Tomar solo el pago más reciente (misma lógica que Ventas Totales)
-            const sortedPayments = basePayments
-              .sort((a: any, b: any) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
-            const latestPayment = sortedPayments[0];
+      console.log('✅ Reporte de métodos de pago obtenido:', data?.length || 0, 'métodos');
 
-            if (latestPayment) {
-              method = latestPayment.method;
-              amount = latestPayment.amount;
-            }
-          }
-        }
-
-        // Si no hay pagos, usar el total de la orden como "Sin Pago"
-        if (method === 'Sin Pago') {
-          amount = order.finalTotal;
-        }
-
-        if (!methodMap.has(method)) {
-          methodMap.set(method, {
-            method,
-            icon: this.getPaymentMethodIcon(method),
-            color: this.getPaymentMethodColor(method),
-            ordersCount: new Set(),
-            finalTotal: 0
-          });
-        }
-
-        const methodData = methodMap.get(method);
-        if (!methodData) return;
-        methodData.ordersCount.add(order.id);
-        methodData.finalTotal += amount;
-      });
-
-      return Array.from(methodMap.values()).map(method => ({
-        method: method.method,
-        icon: method.icon,
-        color: method.color,
-        ordersCount: method.ordersCount.size,
-        paidByMethod: method.finalTotal, // Alias para compatibilidad
-        originalTotal: method.finalTotal, // Alias para compatibilidad
-        finalTotal: method.finalTotal
+      // Mapear datos de la función RPC
+      const reports = (data || []).map((item: any) => ({
+        method: item.method,
+        icon: item.icon,
+        color: item.color,
+        ordersCount: parseInt(item.ordersCount) || 0,
+        finalTotal: parseFloat(item.finalTotal) || 0,
+        originalTotal: parseFloat(item.originalTotal) || 0,
+        paidByMethod: parseFloat(item.paidByMethod) || 0
       }));
+
+      return reports;
     } catch (error) {
-      console.error('Error getting payment methods report:', error);
-      throw new Error('Error al obtener reporte de métodos de pago');
+      console.error('❌ Error en getPaymentMethodsReport:', error);
+      throw error;
     }
   }
 
+  // =====================================================
+  // REPORTE DE DELIVERY
+  // =====================================================
   async getDeliveryPaymentsReport(
     fromDate?: Date,
     toDate?: Date
   ): Promise<DeliveryPaymentReport[]> {
     try {
-      // CORRECCIÓN: Usar la misma fuente de datos que Ventas Totales para consistencia
-      const { orders } = await this.getOrdersReport({
-        from: fromDate?.toISOString().split('T')[0],
-        to: toDate?.toISOString().split('T')[0],
-        limit: 10000 // Obtener todas las órdenes para el reporte
+      console.log('🚚 ReportsService.getDeliveryPaymentsReport - Obteniendo reporte de delivery:', {
+        fromDate: fromDate?.toISOString().split('T')[0],
+        toDate: toDate?.toISOString().split('T')[0]
       });
 
-      // Generar reporte de delivery desde los datos unificados
-      const methodMap = new Map<string, {
-        method: string;
-        icon: string;
-        color: string;
-        deliveryOrdersCount: Set<string>;
-        finalTotal: number;
-      }>();
+      // Usar función RPC optimizada
+      const { data, error } = await this.supabaseService
+        .getClient()
+        .rpc('get_delivery_payments_report_by_date', {
+          p_from_date: fromDate ? fromDate.toISOString().split('T')[0] : null,
+          p_to_date: toDate ? toDate.toISOString().split('T')[0] : null
+        });
 
-      // Solo considerar órdenes de delivery
-      const deliveryOrders = orders.filter(order => order.spaceType === 'DELIVERY');
-      
-      deliveryOrders.forEach(order => {
-        // CORRECCIÓN: Incluir TODAS las órdenes de delivery, incluso sin pagos registrados
-        let method = 'Sin Pago';
-        let amount = 0;
+      if (error) {
+        console.error('❌ Error en get_delivery_payments_report_by_date:', error);
+        throw error;
+      }
 
-        if (order.payments && Array.isArray(order.payments) && order.payments.length > 0) {
-          // Solo considerar pagos de delivery
-          const deliveryPayments = order.payments.filter((payment: any) => payment.isDelivery);
-          
-          if (deliveryPayments.length > 0) {
-            // Tomar solo el pago de delivery más reciente (misma lógica que Ventas Totales)
-            const sortedDeliveryPayments = deliveryPayments
-              .sort((a: any, b: any) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
-            const latestDeliveryPayment = sortedDeliveryPayments[0];
+      console.log('✅ Reporte de delivery obtenido:', data?.length || 0, 'métodos');
 
-            if (latestDeliveryPayment) {
-              method = latestDeliveryPayment.method;
-              amount = (latestDeliveryPayment as any).surchargeAmount || latestDeliveryPayment.amount;
-            }
-          }
-        }
-
-        // Si no hay pagos de delivery, usar el deliveryFeeTotal de la orden
-        if (method === 'Sin Pago') {
-          amount = order.deliveryFeeTotal || 0;
-        }
-        
-        if (!methodMap.has(method)) {
-          methodMap.set(method, {
-            method,
-            icon: this.getPaymentMethodIcon(method),
-            color: this.getPaymentMethodColor(method),
-            deliveryOrdersCount: new Set(),
-            finalTotal: 0
-          });
-        }
-
-        const methodData = methodMap.get(method);
-        if (!methodData) return;
-        methodData.deliveryOrdersCount.add(order.id);
-        methodData.finalTotal += amount;
-      });
-
-      return Array.from(methodMap.values()).map(method => ({
-        method: method.method,
-        icon: method.icon,
-        color: method.color,
-        deliveryOrdersCount: method.deliveryOrdersCount.size,
-        deliveryFeesPaid: method.finalTotal, // Alias para compatibilidad
-        orderTotalsPaid: method.finalTotal, // Alias para compatibilidad
-        totalPaid: method.finalTotal, // Alias para compatibilidad
-        finalTotal: method.finalTotal
+      // Mapear datos de la función RPC
+      const reports = (data || []).map((item: any) => ({
+        method: item.method,
+        icon: item.icon,
+        color: item.color,
+        deliveryOrdersCount: parseInt(item.deliveryOrdersCount) || 0,
+        deliveryFeesPaid: parseFloat(item.deliveryFeesPaid) || 0,
+        orderTotalsPaid: parseFloat(item.orderTotalsPaid) || 0,
+        totalPaid: parseFloat(item.totalPaid) || 0
       }));
+
+      return reports;
     } catch (error) {
-      console.error('Error getting delivery payments report:', error);
-      throw new Error('Error al obtener reporte de pagos de delivery');
+      console.error('❌ Error en getDeliveryPaymentsReport:', error);
+      throw error;
     }
   }
 
+  // =====================================================
+  // REPORTE DE ÓRDENES
+  // =====================================================
   async getOrdersReport(filters: ReportsFilters): Promise<{
     orders: OrderReport[];
     total: number;
@@ -210,7 +164,16 @@ export class ReportsService {
       const page = filters.page || 1;
       const limit = filters.limit || 50;
 
-      // Usar función RPC para filtros de fecha y otros filtros precisos
+      console.log('📋 ReportsService.getOrdersReport - Obteniendo reporte de órdenes:', {
+        from: filters.from,
+        to: filters.to,
+        status: filters.status,
+        spaceType: filters.spaceType,
+        page,
+        limit
+      });
+
+      // Usar función RPC optimizada
       const { data, error } = await this.supabaseService
         .getClient()
         .rpc('get_orders_report_by_date', {
@@ -222,136 +185,165 @@ export class ReportsService {
           p_limit: limit
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error en get_orders_report_by_date:', error);
+        throw error;
+      }
 
       // La función RPC retorna { orders: JSONB, total: BIGINT }
       const result = data && data.length > 0 ? data[0] : { orders: [], total: 0 };
-      const total = result.total || 0;
+      const total = parseInt(result.total) || 0;
       const ordersData = result.orders || [];
 
-      // Mapear los datos de la función RPC a la interfaz esperada
-      const mappedOrders = ordersData.map((item: any) => {
-        // CORRECCIÓN: Calcular paidTotal correctamente desde los pagos
-        let correctPaidTotal = 0;
-        if (item.payments && Array.isArray(item.payments)) {
-          // Solo sumar el monto del pago más reciente (no todos los pagos)
-          const latestPayment = item.payments
-            .sort((a: any, b: any) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime())[0];
-          if (latestPayment) {
-            correctPaidTotal = latestPayment.amount || 0;
-          }
-        }
+      console.log('✅ Reporte de órdenes obtenido:', ordersData.length, 'órdenes de', total, 'total');
 
-        return {
-          id: item.id,
-          orderNumber: item.orderNumber,
-          createdAt: new Date(item.createdAt),
-          spaceCode: item.spaceCode,
-          spaceName: item.spaceName,
-          spaceType: item.spaceType,
-          customerName: item.customerName,
-          status: item.status,
-          originalTotal: item.originalTotal || 0,
-          finalTotal: item.finalTotal || 0,
-          paidTotal: correctPaidTotal, // ✅ CORREGIDO: Solo el pago más reciente
-          deliveryFeeTotal: item.deliveryFeeTotal || 0,
-          totalPaid: item.totalPaid || 0,
-          payments: item.payments || []
-        };
-      });
+      // Mapear los datos de la función RPC a la interfaz esperada
+      const mappedOrders = ordersData.map((item: any) => ({
+        id: item.id,
+        orderNumber: item.orderNumber,
+        createdAt: new Date(item.createdAt),
+        spaceCode: item.spaceCode,
+        spaceName: item.spaceName,
+        spaceType: item.spaceType,
+        customerName: item.customerName,
+        status: item.status,
+        originalTotal: parseFloat(item.originalTotal) || 0,
+        finalTotal: parseFloat(item.finalTotal) || 0,
+        paidTotal: parseFloat(item.paidTotal) || 0,
+        deliveryFeeTotal: parseFloat(item.deliveryFeeTotal) || 0,
+        totalPaid: parseFloat(item.totalPaid) || 0,
+        payments: (item.payments || []).map((payment: any) => ({
+          method: payment.method,
+          amount: parseFloat(payment.amount) || 0,
+          baseAmount: payment.baseAmount ? parseFloat(payment.baseAmount) : undefined,
+          surchargeAmount: payment.surchargeAmount ? parseFloat(payment.surchargeAmount) : undefined,
+          isDelivery: Boolean(payment.isDelivery),
+          paymentDate: new Date(payment.paymentDate)
+        }))
+      }));
 
       return {
         orders: mappedOrders,
-        total: total,
+        total,
         page,
         limit
       };
     } catch (error) {
-      console.error('Error getting orders report:', error);
-      throw new Error('Error al obtener reporte de órdenes');
+      console.error('❌ Error en getOrdersReport:', error);
+      throw error;
     }
   }
 
+  // =====================================================
+  // ELIMINACIÓN SUAVE DE ÓRDENES
+  // =====================================================
   async softDeleteOrder(
     orderId: string,
     reason?: string
   ): Promise<{ success: boolean; message: string }> {
     try {
-      const { data, error } = await this.supabaseService
+      console.log('🗑️ ReportsService.softDeleteOrder - Eliminando orden:', orderId);
+
+      const { error } = await this.supabaseService
         .getClient()
-        .rpc('soft_delete_order', {
-          p_order_id: orderId,
-          p_reason: reason || 'Eliminado por administrador'
-        });
+        .from('Order')
+        .update({
+          deletedAt: new Date().toISOString(),
+          deletedReason: reason || 'Eliminado por administrador'
+        })
+        .eq('id', orderId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error eliminando orden:', error);
+        throw error;
+      }
 
+      console.log('✅ Orden eliminada correctamente:', orderId);
       return {
         success: true,
-        message: `Orden ${orderId} eliminada exitosamente`
+        message: 'Orden eliminada correctamente'
       };
     } catch (error) {
-      console.error('Error soft deleting order:', error);
+      console.error('❌ Error en softDeleteOrder:', error);
       return {
         success: false,
-        message: 'Error al eliminar la orden'
+        message: `Error eliminando orden: ${error.message}`
       };
     }
   }
 
-  async exportOrdersReport(filters: ReportsFilters): Promise<{
-    csv: string;
-    filename: string;
-  }> {
+  // =====================================================
+  // EXPORTACIÓN DE REPORTES
+  // =====================================================
+  async exportOrdersReport(filters: ReportsFilters): Promise<{ csv: string; filename: string }> {
     try {
-      // Obtener todos los datos sin paginación para exportar
-      const allFilters = { ...filters, limit: 10000 };
-      const { orders } = await this.getOrdersReport(allFilters);
+      console.log('📤 ReportsService.exportOrdersReport - Exportando reporte de órdenes');
+
+      // Obtener todas las órdenes sin paginación para exportar
+      const { data, error } = await this.supabaseService
+        .getClient()
+        .rpc('get_orders_report_by_date', {
+          p_from_date: filters.from ? new Date(filters.from).toISOString().split('T')[0] : null,
+          p_to_date: filters.to ? new Date(filters.to).toISOString().split('T')[0] : null,
+          p_status: filters.status || null,
+          p_space_type: filters.spaceType || null,
+          p_page: 1,
+          p_limit: 10000 // Límite alto para exportar todo
+        });
+
+      if (error) {
+        console.error('❌ Error en exportOrdersReport:', error);
+        throw error;
+      }
+
+      const result = data && data.length > 0 ? data[0] : { orders: [], total: 0 };
+      const ordersData = result.orders || [];
 
       // Generar CSV
       const headers = [
-        'Orden',
+        'Número de Orden',
         'Fecha',
-        'Espacio',
         'Cliente',
+        'Espacio',
+        'Tipo de Espacio',
         'Estado',
         'Total Original',
         'Total Final',
         'Total Pagado',
-        'Fee Delivery',
         'Métodos de Pago'
       ];
 
       const csvRows = [headers.join(',')];
 
-      orders.forEach(order => {
-        const payments = order.payments
-          .map(p => `${p.method}: ${p.amount}`)
+      ordersData.forEach((order: any) => {
+        const paymentMethods = (order.payments || [])
+          .map((p: any) => `${p.method}: S/${p.amount}`)
           .join('; ');
 
         const row = [
-          order.orderNumber,
-          order.createdAt.toISOString().split('T')[0],
-          order.spaceCode,
-          order.customerName || '',
-          order.status,
-          order.originalTotal,
-          order.finalTotal,
-          order.paidTotal,
-          order.deliveryFeeTotal,
-          `"${payments}"`
+          `"${order.orderNumber}"`,
+          `"${new Date(order.createdAt).toLocaleDateString()}"`,
+          `"${order.customerName}"`,
+          `"${order.spaceCode}"`,
+          `"${order.spaceType}"`,
+          `"${order.status}"`,
+          `"${order.originalTotal}"`,
+          `"${order.finalTotal}"`,
+          `"${order.totalPaid}"`,
+          `"${paymentMethods}"`
         ];
-
         csvRows.push(row.join(','));
       });
 
       const csv = csvRows.join('\n');
-      const filename = `reporte_ventas_${new Date().toISOString().split('T')[0]}.csv`;
+      const filename = `reporte_ordenes_${new Date().toISOString().split('T')[0]}.csv`;
+
+      console.log('✅ Reporte exportado:', filename, 'con', ordersData.length, 'órdenes');
 
       return { csv, filename };
     } catch (error) {
-      console.error('Error exporting orders report:', error);
-      throw new Error('Error al exportar reporte de órdenes');
+      console.error('❌ Error en exportOrdersReport:', error);
+      throw error;
     }
   }
 }

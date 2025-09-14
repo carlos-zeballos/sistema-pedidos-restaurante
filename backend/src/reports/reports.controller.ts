@@ -1,60 +1,8 @@
 import { Controller, Get, Query, Delete, Param, Body, UseGuards } from '@nestjs/common';
-import { ReportsService } from './reports.service';
+import { ReportsService, PaymentMethodReport, DeliveryPaymentReport, OrderReport, ReportsFilters } from './reports.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
-
-export interface PaymentMethodReport {
-  method: string;
-  icon: string;
-  color: string;
-  ordersCount: number;
-  paidByMethod: number;
-  originalTotal: number;
-  finalTotal: number;
-}
-
-export interface DeliveryPaymentReport {
-  method: string;
-  icon: string;
-  color: string;
-  deliveryOrdersCount: number;
-  deliveryFeesPaid: number;
-  orderTotalsPaid: number;
-  totalPaid: number;
-}
-
-export interface OrderReport {
-  id: string;
-  orderNumber: string;
-  createdAt: Date;
-  spaceCode: string;
-  spaceName: string;
-  spaceType: string;
-  customerName: string;
-  status: string;
-  originalTotal: number;
-  finalTotal: number;
-  paidTotal: number;
-  deliveryFeeTotal: number;
-  totalPaid: number;
-  payments: Array<{
-    method: string;
-    amount: number;
-    isDelivery: boolean;
-    paymentDate: Date;
-  }>;
-}
-
-export interface ReportsFilters {
-  from?: string;
-  to?: string;
-  status?: string;
-  method?: string;
-  spaceType?: string;
-  page?: number;
-  limit?: number;
-}
 
 @Controller('reports')
 @UseGuards(JwtAuthGuard, RolesGuard)

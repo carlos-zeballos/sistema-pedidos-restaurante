@@ -7,6 +7,6 @@ import { SupabaseModule } from '../lib/supabase.module';
   imports: [SupabaseModule],
   controllers: [PaymentsController],
   providers: [PaymentsService],
-  exports: [PaymentsService],
+  exports: [PaymentsService] // Exportar para usar en otros módulos si es necesario
 })
 export class PaymentsModule {}

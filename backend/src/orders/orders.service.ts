@@ -9,7 +9,7 @@ export interface Order {
   assignedTo?: string;
   customerName?: string;
   customerPhone?: string;
-  status: 'PENDIENTE' | 'EN_PREPARACION' | 'LISTO' | 'ENTREGADO' | 'CANCELADO';
+  status: 'PENDIENTE' | 'EN_PREPARACION' | 'LISTO' | 'PAGADO' | 'CANCELADO';
   totalAmount: number;
   subtotal: number;
   tax: number;

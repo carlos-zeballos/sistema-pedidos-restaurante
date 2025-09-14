@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Query, BadRequestException } from '@nestjs/common';
-import { OrdersService } from './orders.service';
+import { OrdersService, OrderStatus } from './orders.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -36,55 +36,21 @@ export class OrdersController {
   @Post()
   @Roles('MOZO', 'ADMIN')
   async createOrder(@Body() createOrderDto: { 
-    spaceid: string; 
-    createdby: string;
-    customername?: string;
-    customerphone?: string;
+    spaceId: string; 
+    customerName: string;
     items: any[]; 
     notes?: string;
-    totalamount?: number;
-    subtotal?: number;
-    tax?: number;
-    discount?: number;
-    deliverycost?: number;
-    isdelivery?: boolean;
   }) {
-    // Convertir los nombres de propiedades para que coincidan con el servicio
-    const convertedDto = {
-      spaceId: createOrderDto.spaceid,
-      createdBy: createOrderDto.createdby,
-      customerName: createOrderDto.customername,
-      customerPhone: createOrderDto.customerphone,
-      items: (createOrderDto.items || []).map((it: any) => ({
-        productId: it.productId ?? it.productid ?? null,
-        comboId: it.comboId ?? it.comboid ?? null,
-        name: it.name,
-        unitPrice: it.unitPrice ?? it.unitprice ?? 0,
-        totalPrice: it.totalPrice ?? it.totalprice ?? 0,
-        quantity: it.quantity ?? 1,
-        notes: it.notes ?? null,
-      })),
-      notes: createOrderDto.notes,
-      totalAmount: createOrderDto.totalamount,
-      subtotal: createOrderDto.subtotal,
-      tax: createOrderDto.tax,
-      discount: createOrderDto.discount,
-      deliveryCost: createOrderDto.deliverycost,
-      isDelivery: createOrderDto.isdelivery
-    };
-    return this.ordersService.createOrder(convertedDto);
+    return this.ordersService.createOrder(createOrderDto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Put(':id/status')
   @Roles('COCINERO', 'MOZO', 'ADMIN')
   async updateOrderStatus(@Param('id') id: string, @Body() statusDto: { 
-    status: 'PENDIENTE' | 'EN_PREPARACION' | 'LISTO' | 'PAGADO' | 'CANCELADO';
-    assignedTo?: string;
-    assignedto?: string; // aceptar ambos formatos
+    status: OrderStatus;
   }) {
-    const assignedTo = statusDto.assignedTo ?? statusDto.assignedto;
-    return this.ordersService.updateOrderStatus(id, statusDto.status, assignedTo);
+    return this.ordersService.updateOrderStatus(id, statusDto.status);
   }
 
   // Actualizar datos generales de la orden
@@ -219,8 +185,8 @@ export class OrdersController {
 
     // Asegurar que spaceId y createdBy no sean undefined antes de llamar al servicio
     const validatedDto = {
-      spaceId: convertedDto.spaceId!, // El ! asegura que no sea undefined
-      createdBy: convertedDto.createdBy!, // El ! asegura que no sea undefined
+      spaceId: convertedDto.spaceId as string,
+      createdBy: convertedDto.createdBy as string,
       customerName: convertedDto.customerName,
       customerPhone: convertedDto.customerPhone,
       items: convertedDto.items,

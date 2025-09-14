@@ -1,24 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../lib/supabase.service';
 
+export type OrderStatus = 'PENDIENTE' | 'EN_PREPARACION' | 'LISTO' | 'PAGADO' | 'CANCELADO';
+
 export interface Order {
   id: string;
   orderNumber: string;
   spaceId: string;
-  createdBy: string;
-  assignedTo?: string;
-  customerName?: string;
-  customerPhone?: string;
-  status: 'PENDIENTE' | 'EN_PREPARACION' | 'LISTO' | 'PAGADO' | 'CANCELADO';
+  customerName: string;
+  status: OrderStatus;
   totalAmount: number;
-  subtotal: number;
-  tax: number;
-  discount: number;
   notes?: string;
-  deliveryCost?: number;
-  isDelivery?: boolean;
-  orderPaymentMethodId?: string;
-  deliveryPaymentMethodId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,12 +20,10 @@ export interface OrderItem {
   orderId: string;
   productId?: string;
   comboId?: string;
-  name: string;
-  unitPrice: number;
-  totalPrice: number;
   quantity: number;
-  status: 'PENDIENTE' | 'EN_PREPARACION' | 'LISTO' | 'PAGADO';
+  price: number;
   notes?: string;
+  status: OrderStatus;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -125,129 +115,63 @@ export class OrdersService {
 
   async createOrder(createOrderDto: {
     spaceId: string;
-    createdBy: string;
-    customerName?: string;
-    customerPhone?: string;
+    customerName: string;
     items: any[];
     notes?: string;
-    totalAmount?: number;
-    subtotal?: number;
-    tax?: number;
-    discount?: number;
-    deliveryCost?: number;
-    isDelivery?: boolean;
   }) {
-    // Crear orden + items vía RPC atómico en la BD (versión con soporte para delivery)
-    // Usar parámetros posicionales según la firma de la función:
-    // 1. p_created_by, 2. p_customer_name, 3. p_customer_phone, 4. p_discount, 
-    // 5. p_items, 6. p_notes, 7. p_space_id, 8. p_subtotal, 9. p_tax, 10. p_total_amount,
-    // 11. p_delivery_cost, 12. p_is_delivery
-    const mappedItems = (createOrderDto.items ?? []).map((it) => {
-      const mappedItem = {
-        productId: it.productId ?? it.productid ?? null,
-        comboId: it.comboId ?? it.comboid ?? null,
-        name: it.name,
-        unitPrice: it.unitPrice ?? it.unitprice ?? 0,
-        totalPrice: it.totalPrice ?? it.totalprice ?? 0,
-        quantity: it.quantity ?? 1,
-        notes: it.notes ?? null,
-      };
-      
-      console.log('🔍 Mapeando item para RPC:', {
-        originalItem: it,
-        mappedItem: mappedItem,
-        unitPriceSource: it.unitPrice ?? it.unitprice ?? 'NOT_FOUND',
-        totalPriceSource: it.totalPrice ?? it.totalprice ?? 'NOT_FOUND'
-      });
-      
-      return mappedItem;
-    });
+    // Generar número de orden único
+    const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+    
+    // Mapear items para la función RPC simplificada
+    const mappedItems = (createOrderDto.items ?? []).map((it) => ({
+      productId: it.productId ?? null,
+      comboId: it.comboId ?? null,
+      quantity: it.quantity ?? 1,
+      price: it.price ?? 0,
+      notes: it.notes ?? null,
+    }));
 
-    const rpcPayload = {
-      p_created_by: createOrderDto.createdBy,
-      p_customer_name: createOrderDto.customerName ?? null,
-      p_customer_phone: createOrderDto.customerPhone ?? null,
-      p_discount: createOrderDto.discount ?? 0,
-      p_items: mappedItems,
-      p_notes: createOrderDto.notes ?? null,
-      p_space_id: createOrderDto.spaceId,
-      p_subtotal: createOrderDto.subtotal ?? 0,
-      p_tax: createOrderDto.tax ?? 0,
-      p_total_amount: createOrderDto.totalAmount ?? 0,
-      p_delivery_cost: createOrderDto.deliveryCost ?? 0,
-      p_is_delivery: createOrderDto.isDelivery ?? false,
+    const orderData = {
+      orderNumber,
+      customerName: createOrderDto.customerName,
+      spaceId: createOrderDto.spaceId,
+      notes: createOrderDto.notes ?? null,
     };
 
-    console.log('🚀 Llamando RPC create_order_with_items con payload:', JSON.stringify(rpcPayload, null, 2));
+    console.log('🚀 Creando orden con RPC simplificado:', { orderData, mappedItems });
     
-    const { data: rpcData, error: rpcError } = await this.supabaseService
+    const { data: orderId, error: rpcError } = await this.supabaseService
       .getClient()
-      .rpc('create_order_with_items', rpcPayload);
+      .rpc('create_simple_order', {
+        order_data: orderData,
+        items_data: mappedItems
+      });
 
     if (rpcError) {
-      console.error('❌ Error en RPC create_order_with_items:', {
-        message: rpcError.message,
-        details: rpcError.details,
-        hint: rpcError.hint,
-        code: rpcError.code,
-        payload: rpcPayload
-      });
-      throw new Error(`Error creating order via RPC: ${rpcError.message} - Details: ${rpcError.details || 'No details'} - Hint: ${rpcError.hint || 'No hint'}`);
+      console.error('❌ Error en RPC create_simple_order:', rpcError);
+      throw new Error(`Error creating order: ${rpcError.message}`);
     }
 
-    console.log('✅ RPC create_order_with_items exitoso:', rpcData);
-
-    const created = {
-      id: rpcData[0].order_id,
-      orderNumber: rpcData[0].order_number
-    };
+    console.log('✅ Orden creada exitosamente:', orderId);
     
-    // Actualizar campos de delivery si es necesario
-    if (createOrderDto.isDelivery || createOrderDto.deliveryCost) {
-      console.log('🚚 Actualizando campos de delivery:', {
-        isDelivery: createOrderDto.isDelivery,
-        deliveryCost: createOrderDto.deliveryCost
-      });
-      
-      const { error: updateError } = await this.supabaseService
-        .getClient()
-        .from('Order')
-        .update({
-          isDelivery: createOrderDto.isDelivery ?? false,
-          deliveryCost: createOrderDto.deliveryCost ?? 0,
-          updatedAt: new Date().toISOString()
-        })
-        .eq('id', created.id);
-        
-      if (updateError) {
-        console.error('❌ Error actualizando campos de delivery:', updateError);
-        // No lanzamos error aquí para no romper el flujo principal
-      } else {
-        console.log('✅ Campos de delivery actualizados correctamente');
-      }
-    }
-    
+    // Obtener la orden creada
     const { data: order, error } = await this.supabaseService
       .getClient()
       .from('Order')
       .select('*')
-      .eq('id', created.id)
+      .eq('id', orderId)
       .single();
+      
     if (error) {
-      throw new Error(`Error fetching order after RPC: ${error.message}`);
+      throw new Error(`Error fetching created order: ${error.message}`);
     }
+    
     return order as Order;
   }
 
   async updateOrderStatus(
     id: string,
-    status:
-      | 'PENDIENTE'
-      | 'EN_PREPARACION'
-      | 'LISTO'
-      | 'PAGADO'
-      | 'CANCELADO',
-    assignedTo?: string,
+    status: OrderStatus,
   ) {
     const order = await this.getOrderById(id);
 
@@ -259,8 +183,6 @@ export class OrdersService {
         {
           orderId: id,
           status,
-          changedBy: assignedTo || order.createdBy,
-          notes: `Estado cambiado a ${status}`,
         },
       ]);
     if (historyError) {
@@ -276,8 +198,6 @@ export class OrdersService {
       .from('Order')
       .update({
         status,
-        assignedTo,
-        actualReadyTime: status === 'LISTO' ? new Date() : undefined,
       })
       .eq('id', id)
       .select()
@@ -289,59 +209,23 @@ export class OrdersService {
     // Si la orden se marca como PAGADA, registrar el pago automáticamente
     if (status === 'PAGADO') {
       try {
-        // Obtener el método de pago por defecto (EFECTIVO)
-        const { data: paymentMethod, error: methodError } = await this.supabaseService
+        const { error: paymentError } = await this.supabaseService
           .getClient()
-          .from('PaymentMethod')
-          .select('id')
-          .eq('name', 'EFECTIVO')
-          .eq('isActive', true)
-          .single();
+          .from('OrderPayment')
+          .insert({
+            orderId: id,
+            method: 'EFECTIVO',
+            amount: order.totalAmount || 0,
+          });
 
-        if (!methodError && paymentMethod) {
-          // Verificar si ya existe un pago para esta orden
-          const { data: existingPayment, error: checkError } = await this.supabaseService
-            .getClient()
-            .from('OrderPayment')
-            .select('id')
-            .eq('orderId', id)
-            .limit(1);
-
-          // Solo registrar el pago si no existe uno previo
-          if (!checkError && (!existingPayment || existingPayment.length === 0)) {
-            const { error: paymentError } = await this.supabaseService
-              .getClient()
-              .from('OrderPayment')
-              .insert({
-                orderId: id,
-                paymentMethodId: paymentMethod.id,
-                amount: order.totalAmount || 0,
-                baseAmount: order.totalAmount || 0,
-                surchargeAmount: 0,
-                isDeliveryService: false,
-                notes: 'Pago automático al marcar como PAGADO',
-                paymentDate: new Date().toISOString()
-              });
-
-            if (paymentError) {
-              console.warn('Warning: Could not register automatic payment:', paymentError.message);
-            } else {
-              console.log(`✅ Pago automático registrado para orden ${id}: ${order.totalAmount || 0}`);
-            }
-          }
+        if (paymentError) {
+          console.warn('Warning: Could not register automatic payment:', paymentError.message);
         } else {
-          console.warn('Warning: Could not find EFECTIVO payment method for automatic payment');
+          console.log(`✅ Pago automático registrado para orden ${id}: ${order.totalAmount || 0}`);
         }
       } catch (paymentError) {
         console.warn('Warning: Error in automatic payment registration:', paymentError.message);
       }
-
-      // Liberar la mesa
-      await this.supabaseService
-        .getClient()
-        .from('Space')
-        .update({ status: 'LIBRE' })
-        .eq('id', order.spaceId);
     }
 
     return data as Order;

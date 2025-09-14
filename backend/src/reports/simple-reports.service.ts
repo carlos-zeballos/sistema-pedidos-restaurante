@@ -7,7 +7,7 @@ export class SimpleReportsService {
 
   // Obtener órdenes activas simplificadas para mozos
   async getActiveOrdersForWaiters() {
-    const { data, error } = await this.supabase.client.rpc('get_active_orders_for_waiters');
+    const { data, error } = await this.supabase.getClient().rpc('get_active_orders_for_waiters');
     
     if (error) {
       console.error('Error getting active orders for waiters:', error);
@@ -19,9 +19,9 @@ export class SimpleReportsService {
 
   // Obtener productos disponibles
   async getAvailableProducts() {
-    const { data, error } = await this.supabase.client
+    const { data, error } = await this.supabase.getClient()
       .from('Product')
-      .select('id, name, price, isAvailable')
+      .select('id, name, price, "isAvailable"')
       .eq('isAvailable', true)
       .order('name');
 
@@ -35,9 +35,9 @@ export class SimpleReportsService {
 
   // Obtener espacios disponibles
   async getAvailableSpaces() {
-    const { data, error } = await this.supabase.client
+    const { data, error } = await this.supabase.getClient()
       .from('Space')
-      .select('id, name, type, isActive')
+      .select('id, name, type, "isActive"')
       .eq('isActive', true)
       .order('name');
 
@@ -53,12 +53,27 @@ export class SimpleReportsService {
   async createSimpleOrder(orderData: {
     spaceId: string;
     customerName: string;
-    items: Array<{ productId: string; quantity: number }>;
+    items: Array<{ productId: string; quantity: number; price: number }>;
   }) {
-    const { data, error } = await this.supabase.client.rpc('create_simple_order', {
-      p_space_id: orderData.spaceId,
-      p_customer_name: orderData.customerName,
-      p_items: orderData.items
+    const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+    
+    const orderPayload = {
+      orderNumber,
+      customerName: orderData.customerName,
+      spaceId: orderData.spaceId,
+      notes: null
+    };
+
+    const itemsPayload = orderData.items.map(item => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      price: item.price,
+      notes: null
+    }));
+
+    const { data, error } = await this.supabase.getClient().rpc('create_simple_order', {
+      order_data: orderPayload,
+      items_data: itemsPayload
     });
 
     if (error) {
@@ -71,7 +86,7 @@ export class SimpleReportsService {
 
   // Actualizar estado de orden
   async updateOrderStatusSimple(orderId: string, status: string) {
-    const { data, error } = await this.supabase.client
+    const { data, error } = await this.supabase.getClient()
       .from('Order')
       .update({ status })
       .eq('id', orderId)

@@ -169,5 +169,5 @@ $$;
 CREATE INDEX IF NOT EXISTS idx_order_status_created_at ON "Order" (status, "createdAt" DESC);
 CREATE INDEX IF NOT EXISTS idx_order_space_status ON "Order" ("spaceId", status);
 CREATE INDEX IF NOT EXISTS idx_orderitem_order_id ON "OrderItem" ("orderId");
-CREATE INDEX IF NOT EXISTS idx_product_available ON "Product" (isAvailable) WHERE isAvailable = true;
-CREATE INDEX IF NOT EXISTS idx_space_active ON "Space" (isActive) WHERE isActive = true;
+CREATE INDEX IF NOT EXISTS idx_product_available ON "Product" ("isAvailable") WHERE "isAvailable" = true;
+CREATE INDEX IF NOT EXISTS idx_space_active ON "Space" ("isActive") WHERE "isActive" = true;

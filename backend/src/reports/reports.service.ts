@@ -11,33 +11,90 @@ import {
 export class ReportsService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
+  // Helper methods para iconos y colores de métodos de pago
+  private getPaymentMethodIcon(method: string): string {
+    const iconMap: { [key: string]: string } = {
+      'Efectivo': '💰',
+      'Yape': '📱',
+      'Plin': '📱',
+      'Transferencia': '🏦',
+      'Tarjeta': '💳',
+      'Billetera Digital': '📲'
+    };
+    return iconMap[method] || '💳';
+  }
+
+  private getPaymentMethodColor(method: string): string {
+    const colorMap: { [key: string]: string } = {
+      'Efectivo': '#10B981',
+      'Yape': '#8B5CF6',
+      'Plin': '#F59E0B',
+      'Transferencia': '#3B82F6',
+      'Tarjeta': '#EF4444',
+      'Billetera Digital': '#06B6D4'
+    };
+    return colorMap[method] || '#6B7280';
+  }
+
   async getPaymentMethodsReport(
     fromDate?: Date,
     toDate?: Date
   ): Promise<PaymentMethodReport[]> {
     try {
-      // Usar función RPC para filtros de fecha precisos
-      const { data, error } = await this.supabaseService
-        .getClient()
-        .rpc('get_payment_methods_report_by_date', {
-          p_from_date: fromDate?.toISOString().split('T')[0] || null,
-          p_to_date: toDate?.toISOString().split('T')[0] || null
-        });
+      // CORRECCIÓN: Usar la misma fuente de datos que Ventas Totales para consistencia
+      const { orders } = await this.getOrdersReport({
+        from: fromDate?.toISOString().split('T')[0],
+        to: toDate?.toISOString().split('T')[0],
+        limit: 10000 // Obtener todas las órdenes para el reporte
+      });
 
-      if (error) throw error;
-      
-      // Mapear los datos de la función RPC a la interfaz esperada
-      const mappedData = (data || []).map(item => ({
-        method: item.method,
-        icon: item.icon,
-        color: item.color,
-        ordersCount: item.orderscount || 0,
-        paidByMethod: item.paidbymethod || 0,
-        originalTotal: item.originaltotal || 0,
-        finalTotal: item.finaltotal || 0
+      // Generar reporte de métodos de pago desde los datos unificados
+      const methodMap = new Map<string, {
+        method: string;
+        icon: string;
+        color: string;
+        ordersCount: Set<string>;
+        finalTotal: number;
+      }>();
+
+      orders.forEach(order => {
+        if (!order.payments || !Array.isArray(order.payments)) return;
+
+        // Solo considerar pagos base (no delivery)
+        const basePayments = order.payments.filter((payment: any) => !payment.isDelivery);
+        if (basePayments.length === 0) return;
+
+        // Tomar solo el pago más reciente (misma lógica que Ventas Totales)
+        const sortedPayments = basePayments
+          .sort((a: any, b: any) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
+        const latestPayment = sortedPayments[0];
+
+        if (!latestPayment) return;
+
+        const method = latestPayment.method;
+        if (!methodMap.has(method)) {
+          methodMap.set(method, {
+            method,
+            icon: this.getPaymentMethodIcon(method),
+            color: this.getPaymentMethodColor(method),
+            ordersCount: new Set(),
+            finalTotal: 0
+          });
+        }
+
+        const methodData = methodMap.get(method);
+        if (!methodData) return;
+        methodData.ordersCount.add(order.id);
+        methodData.finalTotal += latestPayment.amount; // Solo el monto del pago final
+      });
+
+      return Array.from(methodMap.values()).map(method => ({
+        method: method.method,
+        icon: method.icon,
+        color: method.color,
+        ordersCount: method.ordersCount.size,
+        finalTotal: method.finalTotal
       }));
-
-      return mappedData;
     } catch (error) {
       console.error('Error getting payment methods report:', error);
       throw new Error('Error al obtener reporte de métodos de pago');
@@ -49,28 +106,65 @@ export class ReportsService {
     toDate?: Date
   ): Promise<DeliveryPaymentReport[]> {
     try {
-      // Usar función RPC para filtros de fecha precisos
-      const { data, error } = await this.supabaseService
-        .getClient()
-        .rpc('get_delivery_payments_report_by_date', {
-          p_from_date: fromDate?.toISOString().split('T')[0] || null,
-          p_to_date: toDate?.toISOString().split('T')[0] || null
-        });
+      // CORRECCIÓN: Usar la misma fuente de datos que Ventas Totales para consistencia
+      const { orders } = await this.getOrdersReport({
+        from: fromDate?.toISOString().split('T')[0],
+        to: toDate?.toISOString().split('T')[0],
+        limit: 10000 // Obtener todas las órdenes para el reporte
+      });
 
-      if (error) throw error;
+      // Generar reporte de delivery desde los datos unificados
+      const methodMap = new Map<string, {
+        method: string;
+        icon: string;
+        color: string;
+        deliveryOrdersCount: Set<string>;
+        finalTotal: number;
+      }>();
+
+      // Solo considerar órdenes de delivery
+      const deliveryOrders = orders.filter(order => order.spaceType === 'DELIVERY');
       
-      // Mapear los datos de la función RPC a la interfaz esperada
-      const mappedData = (data || []).map(item => ({
-        method: item.method,
-        icon: item.icon,
-        color: item.color,
-        deliveryOrdersCount: item.deliveryorderscount || 0,
-        deliveryFeesPaid: item.deliveryfeespaid || 0,
-        orderTotalsPaid: item.ordertotalspaid || 0,
-        totalPaid: item.totalpaid || 0
-      }));
+      deliveryOrders.forEach(order => {
+        if (!order.payments || !Array.isArray(order.payments)) return;
 
-      return mappedData;
+        // Solo considerar pagos de delivery
+        const deliveryPayments = order.payments.filter((payment: any) => payment.isDelivery);
+        if (deliveryPayments.length === 0) return;
+
+        // Tomar solo el pago de delivery más reciente (misma lógica que Ventas Totales)
+        const sortedDeliveryPayments = deliveryPayments
+          .sort((a: any, b: any) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
+        const latestDeliveryPayment = sortedDeliveryPayments[0];
+
+        if (!latestDeliveryPayment) return;
+
+        const method = latestDeliveryPayment.method;
+        const amount = latestDeliveryPayment.surchargeAmount || latestDeliveryPayment.amount;
+        
+        if (!methodMap.has(method)) {
+          methodMap.set(method, {
+            method,
+            icon: this.getPaymentMethodIcon(method),
+            color: this.getPaymentMethodColor(method),
+            deliveryOrdersCount: new Set(),
+            finalTotal: 0
+          });
+        }
+
+        const methodData = methodMap.get(method);
+        if (!methodData) return;
+        methodData.deliveryOrdersCount.add(order.id);
+        methodData.finalTotal += amount; // Solo el monto del delivery final
+      });
+
+      return Array.from(methodMap.values()).map(method => ({
+        method: method.method,
+        icon: method.icon,
+        color: method.color,
+        deliveryOrdersCount: method.deliveryOrdersCount.size,
+        finalTotal: method.finalTotal
+      }));
     } catch (error) {
       console.error('Error getting delivery payments report:', error);
       throw new Error('Error al obtener reporte de pagos de delivery');
@@ -86,7 +180,6 @@ export class ReportsService {
     try {
       const page = filters.page || 1;
       const limit = filters.limit || 50;
-      const offset = (page - 1) * limit;
 
       // Usar función RPC para filtros de fecha y otros filtros precisos
       const { data, error } = await this.supabaseService

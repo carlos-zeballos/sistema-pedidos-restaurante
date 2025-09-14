@@ -93,6 +93,8 @@ export class ReportsService {
         icon: method.icon,
         color: method.color,
         ordersCount: method.ordersCount.size,
+        paidByMethod: method.finalTotal, // Alias para compatibilidad
+        originalTotal: method.finalTotal, // Alias para compatibilidad
         finalTotal: method.finalTotal
       }));
     } catch (error) {
@@ -140,7 +142,7 @@ export class ReportsService {
         if (!latestDeliveryPayment) return;
 
         const method = latestDeliveryPayment.method;
-        const amount = latestDeliveryPayment.surchargeAmount || latestDeliveryPayment.amount;
+        const amount = (latestDeliveryPayment as any).surchargeAmount || latestDeliveryPayment.amount;
         
         if (!methodMap.has(method)) {
           methodMap.set(method, {
@@ -163,6 +165,9 @@ export class ReportsService {
         icon: method.icon,
         color: method.color,
         deliveryOrdersCount: method.deliveryOrdersCount.size,
+        deliveryFeesPaid: method.finalTotal, // Alias para compatibilidad
+        orderTotalsPaid: method.finalTotal, // Alias para compatibilidad
+        totalPaid: method.finalTotal, // Alias para compatibilidad
         finalTotal: method.finalTotal
       }));
     } catch (error) {

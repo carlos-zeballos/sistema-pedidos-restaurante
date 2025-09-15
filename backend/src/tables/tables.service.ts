@@ -3,13 +3,10 @@ import { SupabaseService } from '../lib/supabase.service';
 
 export interface Space {
   id: string;
-  code: string;
   name: string;
   type: 'MESA' | 'BARRA' | 'DELIVERY' | 'RESERVA';
   capacity?: number;
-  status: 'LIBRE' | 'OCUPADA' | 'RESERVADA' | 'MANTENIMIENTO';
   isActive: boolean;
-  notes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,32 +43,31 @@ export class TablesService {
     return data as Space;
   }
 
-  async getTableByCode(code: string) {
+  async getTableByName(name: string) {
     const { data, error } = await this.supabaseService.getClient()
       .from('Space')
       .select('*')
-      .eq('code', code)
+      .eq('name', name)
       .single();
 
     if (error || !data) {
-      throw new NotFoundException(`Espacio con código ${code} no encontrado`);
+      throw new NotFoundException(`Espacio con nombre ${name} no encontrado`);
     }
 
     return data as Space;
   }
 
   async createTable(createTableDto: { 
-    code: string; 
     name: string;
     type: 'MESA' | 'BARRA' | 'DELIVERY' | 'RESERVA';
     capacity?: number; 
     isActive?: boolean;
   }) {
-    // Verificar que el código de espacio no exista
+    // Verificar que el nombre de espacio no exista
     const { data: existingTable, error: checkError } = await this.supabaseService.getClient()
       .from('Space')
       .select('*')
-      .eq('code', createTableDto.code)
+      .eq('name', createTableDto.name)
       .single();
 
     if (checkError && checkError.code !== 'PGRST116') {
@@ -79,17 +75,15 @@ export class TablesService {
     }
 
     if (existingTable) {
-      throw new Error(`Ya existe un espacio con el código ${createTableDto.code}`);
+      throw new Error(`Ya existe un espacio con el nombre ${createTableDto.name}`);
     }
 
     const { data, error } = await this.supabaseService.getClient()
       .from('Space')
       .insert([{
-        code: createTableDto.code,
         name: createTableDto.name,
         type: createTableDto.type,
         capacity: createTableDto.capacity || 4,
-        status: 'LIBRE',
         isActive: createTableDto.isActive ?? true
       }])
       .select()

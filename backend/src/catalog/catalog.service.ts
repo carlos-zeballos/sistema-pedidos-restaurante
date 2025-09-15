@@ -14,31 +14,22 @@ export interface Category {
 
 export interface Product {
   id: string;
-  code: string;
   name: string;
   description?: string;
   price: number;
   categoryId: string;
-  image?: string;
-  type: 'COMIDA' | 'BEBIDA' | 'POSTRE' | 'COMBO' | 'ADICIONAL';
-  preparationTime?: number;
   isAvailable: boolean;
-  isEnabled: boolean;
-  allergens?: string[];
-  nutritionalInfo?: Record<string, any>;
+  prepTimeMinutes?: number;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface Space {
   id: string;
-  code: string;
   name: string;
   type: 'MESA' | 'BARRA' | 'DELIVERY' | 'RESERVA';
   capacity?: number;
-  status?: 'LIBRE' | 'OCUPADA' | 'RESERVADA' | 'MANTENIMIENTO';
   isActive: boolean;
-  notes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -253,33 +244,27 @@ export class CatalogService {
     return data as Product;
   }
 
-  async getProductByCode(code: string) {
+  async getProductByName(name: string) {
     const { data, error } = await this.supabaseService.getClient()
       .from('Product')
-      .select('id,code,name,description,price,image,type,categoryId,preparationTime,isEnabled,isAvailable,allergens,nutritionalInfo,createdAt,updatedAt')
-      .eq('code', code)
+      .select('id,name,description,price,categoryId,isAvailable,prepTimeMinutes,createdAt,updatedAt')
+      .eq('name', name)
       .single();
 
     if (error || !data) {
-      throw new NotFoundException(`Producto con código ${code} no encontrado`);
+      throw new NotFoundException(`Producto con nombre ${name} no encontrado`);
     }
 
     return data as Product;
   }
 
   async createProduct(createProductDto: {
-    code: string;
     name: string;
     categoryId: string;
     price: number;
-    type?: 'COMIDA' | 'BEBIDA' | 'POSTRE' | 'COMBO' | 'ADICIONAL';
     description?: string;
-    image?: string;
-    preparationTime?: number;
-    isEnabled?: boolean;
+    prepTimeMinutes?: number;
     isAvailable?: boolean;
-    allergens?: string[];
-    nutritionalInfo?: Record<string, any>;
   }) {
     try {
       console.log('🚀 INICIANDO CREACIÓN DE PRODUCTO');
@@ -290,12 +275,12 @@ export class CatalogService {
       await this.getCategoryById(createProductDto.categoryId);
       console.log('✅ Categoría verificada correctamente');
 
-      // Verificar que el código del producto no existe
-      console.log('🔍 Verificando código único...');
+      // Verificar que el nombre del producto no existe
+      console.log('🔍 Verificando nombre único...');
       const { data: existingProduct, error: checkError } = await this.supabaseService.getClient()
         .from('Product')
         .select('id')
-        .eq('code', createProductDto.code)
+        .eq('name', createProductDto.name)
         .single();
 
       if (checkError && checkError.code !== 'PGRST116') {
@@ -304,35 +289,26 @@ export class CatalogService {
       }
 
       if (existingProduct) {
-        console.error('❌ Producto con código duplicado encontrado:', existingProduct);
-        throw new HttpException(`Ya existe un producto con el código ${createProductDto.code}`, HttpStatus.BAD_REQUEST);
+        console.error('❌ Producto con nombre duplicado encontrado:', existingProduct);
+        throw new HttpException(`Ya existe un producto con el nombre ${createProductDto.name}`, HttpStatus.BAD_REQUEST);
       }
-      console.log('✅ Código único verificado');
+      console.log('✅ Nombre único verificado');
 
       console.log('📤 Enviando datos a RPC product_upsert...');
       console.log('📋 Datos a enviar:', {
-        code: createProductDto.code,
         name: createProductDto.name,
         categoryId: createProductDto.categoryId,
-        price: createProductDto.price,
-        type: createProductDto.type ?? 'COMIDA'
+        price: createProductDto.price
       });
 
       const { data: productId, error } = await this.supabaseService.getClient()
         .rpc('product_upsert', {
-          p_code: createProductDto.code,
           p_name: createProductDto.name,
           p_price: createProductDto.price,
           p_category_id: createProductDto.categoryId,
-          p_id: null,
-          p_type: createProductDto.type ?? 'COMIDA',
           p_description: createProductDto.description ?? null,
-          p_image: createProductDto.image ?? null,
-          p_preparation_time: createProductDto.preparationTime ?? 15,
-          p_is_enabled: createProductDto.isEnabled ?? true,
-          p_is_available: createProductDto.isAvailable ?? true,
-          p_allergens: createProductDto.allergens ?? null,
-          p_nutritional_info: createProductDto.nutritionalInfo ?? null
+          p_prep_time_minutes: createProductDto.prepTimeMinutes ?? 15,
+          p_is_available: createProductDto.isAvailable ?? true
         });
 
       console.log('RPC response:', { productId, error });

@@ -202,7 +202,7 @@ export class CatalogService {
   // ========================================
 
   async getProducts(categoryId?: string) {
-    console.log('🔍 CatalogService.getProducts() - Iniciando...');
+    console.log('🔍 CatalogService.getProducts() - Iniciando... [DEPLOY FORZADO]');
     try {
       const supabase = this.supabaseService.getClient();
 

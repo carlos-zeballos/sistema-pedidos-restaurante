@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, HttpException, HttpStatus } from '@nestjs/common';
 import { SupabaseService } from '../lib/supabase.service';
 
+// FORZAR DEPLOY: Aplicar correcciones SQL
+
 export interface Category {
   id: string;
   name: string;
@@ -202,7 +204,7 @@ export class CatalogService {
   // ========================================
 
   async getProducts(categoryId?: string) {
-    console.log('🔍 CatalogService.getProducts() - Iniciando... [VERSION CORREGIDA SIN CODE]');
+    console.log('🔍 CatalogService.getProducts() - Iniciando... [CORREGIDO]');
     try {
       const supabase = this.supabaseService.getClient();
 

@@ -3,6 +3,7 @@ services:
     name: sistema-pedidos-backend
     env: node
     plan: free
+    rootDir: resto-sql/backend
     buildCommand: npm install && npm run build
     startCommand: npm run start:prod
     envVars:

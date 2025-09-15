@@ -3,7 +3,6 @@ services:
     name: sistema-pedidos-backend
     env: node
     plan: free
-    rootDir: backend
     buildCommand: cd backend && npm install && npm run build
     startCommand: cd backend && node dist/main
     envVars:

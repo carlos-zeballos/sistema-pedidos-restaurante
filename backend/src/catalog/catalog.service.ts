@@ -209,7 +209,7 @@ export class CatalogService {
       let query = supabase
         .from('Product')
         .select(`
-          id, code, name, description, price, image, type,
+          id, name, description, price, image, type,
           "categoryId", "preparationTime", "isEnabled", "isAvailable",
           allergens, "nutritionalInfo", "createdAt", "updatedAt"
         `)
@@ -240,7 +240,7 @@ export class CatalogService {
   async getProductById(id: string) {
     const { data, error } = await this.supabaseService.getClient()
       .from('Product')
-      .select('id,code,name,description,price,image,type,categoryId,preparationTime,isEnabled,isAvailable,allergens,nutritionalInfo,createdAt,updatedAt')
+      .select('id,name,description,price,image,type,categoryId,preparationTime,isEnabled,isAvailable,allergens,nutritionalInfo,createdAt,updatedAt')
       .eq('id', id)
       .single();
 
@@ -440,8 +440,8 @@ export class CatalogService {
   async getSpaces() {
     const { data, error } = await this.supabaseService.getClient()
       .from('Space')
-      .select('id,code,name,type,capacity,status,isActive,notes,createdAt,updatedAt')
-      .order('code', { ascending: true });
+      .select('id,name,type,capacity,status,isActive,notes,createdAt,updatedAt')
+      .order('name', { ascending: true });
 
     if (error) {
       throw new HttpException(`Error getting spaces: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -453,7 +453,7 @@ export class CatalogService {
   async getSpaceById(id: string) {
     const { data, error } = await this.supabaseService.getClient()
       .from('Space')
-      .select('id,code,name,type,capacity,status,isActive,notes,createdAt,updatedAt')
+      .select('id,name,type,capacity,status,isActive,notes,createdAt,updatedAt')
       .eq('id', id)
       .single();
 
@@ -576,11 +576,11 @@ export class CatalogService {
       const { data, error } = await supabase
         .from('Combo')
         .select(`
-          id, code, name, description, "basePrice", image, "isEnabled", "isAvailable", "preparationTime", "maxSelections", "categoryId", "createdAt", "updatedAt",
+          id, name, description, "basePrice", image, "isEnabled", "isAvailable", "preparationTime", "maxSelections", "categoryId", "createdAt", "updatedAt",
           ComboComponent(id, name, description, type, price, "isRequired", "isAvailable", "maxSelections", ord)
         `)
         .eq('isEnabled', true)
-        .order('code');
+        .order('name');
 
       console.log('📊 Query combos - Data:', data?.length ?? 0, 'Error:', error);
 
@@ -603,7 +603,7 @@ export class CatalogService {
       const { data, error } = await this.supabaseService.getClient()
         .from('Combo')
         .select(`
-          id, code, name, description, "basePrice", image, "isEnabled", "isAvailable", "preparationTime", "maxSelections", "categoryId", "createdAt", "updatedAt",
+          id, name, description, "basePrice", image, "isEnabled", "isAvailable", "preparationTime", "maxSelections", "categoryId", "createdAt", "updatedAt",
           ComboComponent(id, name, description, type, price, "isRequired", "isAvailable", "maxSelections", ord)
         `)
         .eq('id', id)

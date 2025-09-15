@@ -3,7 +3,7 @@ services:
     name: sistema-pedidos-backend
     env: node
     plan: free
-    rootDir: resto-sql/backend
+    rootDir: backend
     buildCommand: npm install && npm run build
     startCommand: npm run start:prod
     envVars:
@@ -25,14 +25,3 @@ services:
         value: https://sistema-pedidos-kurp.netlify.app
       - key: FRONTEND_URL
         value: https://sistema-pedidos-kurp.netlify.app
-
-
-
-
-
-
-
-
-
-
-

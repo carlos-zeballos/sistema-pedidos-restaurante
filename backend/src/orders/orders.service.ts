@@ -417,7 +417,6 @@ export class OrdersService {
     
     // Actualizar el total de la orden
     const updatedTotalAmount = order.totalAmount + newItemsTotal;
-    const updatedSubtotal = order.subtotal + newItemsTotal;
 
     // Actualizar la orden con el nuevo total y timestamp
     const { error: updateError } = await this.supabaseService
@@ -425,7 +424,6 @@ export class OrdersService {
       .from('Order')
       .update({
         totalAmount: updatedTotalAmount,
-        subtotal: updatedSubtotal,
         updatedAt: new Date().toISOString(), // Timestamp de actualización (ya incluye 'Z')
       })
       .eq('id', orderId);
@@ -447,7 +445,6 @@ export class OrdersService {
       .from('Order')
       .update({
         totalAmount: updatedTotalAmount,
-        subtotal: updatedSubtotal,
         status: newStatus,
         updatedAt: new Date().toISOString()
       })

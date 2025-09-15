@@ -251,7 +251,7 @@ export class OrdersController {
   ) {
     console.log('🧪 Endpoint de prueba - updateOrderStatusTest:', { orderId, statusDto });
     try {
-      const result = await this.ordersService.updateOrderStatus(orderId, statusDto.status, statusDto.assignedTo);
+      const result = await this.ordersService.updateOrderStatus(orderId, statusDto.status);
       console.log('✅ Resultado de pago:', result);
       return result;
     } catch (error) {

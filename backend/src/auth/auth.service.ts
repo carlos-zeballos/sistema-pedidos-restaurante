@@ -34,7 +34,7 @@ export class AuthService {
       console.log('🔄 AuthService.validateUser - Intentando RPC auth_login...');
       const { data, error } = await this.supabaseService
         .getClient()
-        .rpc('auth_login', { p_identifier: identifier, p_password: password });
+        .rpc('auth_login', { p_username: identifier, p_password: password });
 
       if (!error && data && Array.isArray(data) && data.length > 0) {
         console.log('✅ AuthService.validateUser - RPC exitoso');
@@ -61,7 +61,7 @@ export class AuthService {
       console.log(`🔍 AuthService.validateUser - Buscando usuario: ${identifier}`);
       const { data, error } = await client
         .from('User')
-        .select('id, username, email, role, password')
+        .select('id, username, email, role, password_hash')
         .or(`username.eq.${identifier},email.eq.${identifier}`)
         .limit(1);
 
@@ -81,7 +81,7 @@ export class AuthService {
       console.log(`✅ AuthService.validateUser - Usuario encontrado: ${row.username} (${row.role})`);
       console.log(`🔐 AuthService.validateUser - Verificando contraseña...`);
 
-      const ok = await bcrypt.compare(password, row.password);
+      const ok = await bcrypt.compare(password, row.password_hash);
       if (!ok) {
         console.log('❌ AuthService.validateUser - Contraseña incorrecta');
         return null;

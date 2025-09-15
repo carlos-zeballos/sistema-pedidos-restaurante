@@ -14,12 +14,19 @@ export interface Category {
 
 export interface Product {
   id: string;
+  code?: string;
   name: string;
   description?: string;
   price: number;
   categoryId: string;
   isAvailable: boolean;
   prepTimeMinutes?: number;
+  image?: string;
+  type?: 'COMIDA' | 'BEBIDA' | 'POSTRE' | 'COMBO' | 'ADICIONAL';
+  preparationTime?: number;
+  isEnabled?: boolean;
+  allergens?: string[];
+  nutritionalInfo?: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -265,6 +272,13 @@ export class CatalogService {
     description?: string;
     prepTimeMinutes?: number;
     isAvailable?: boolean;
+    code?: string;
+    type?: 'COMIDA' | 'BEBIDA' | 'POSTRE' | 'COMBO' | 'ADICIONAL';
+    image?: string;
+    preparationTime?: number;
+    isEnabled?: boolean;
+    allergens?: string[];
+    nutritionalInfo?: Record<string, any>;
   }) {
     try {
       console.log('🚀 INICIANDO CREACIÓN DE PRODUCTO');

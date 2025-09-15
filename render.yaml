@@ -5,7 +5,7 @@ services:
     plan: free
     rootDir: backend
     buildCommand: npm ci && npm run build && echo "Build completed successfully"
-    startCommand: node dist/main.js
+    startCommand: node src/backend/dist/main.js
     autoDeploy: true
     branch: master
     envVars:

@@ -3,7 +3,7 @@ services:
     name: sistema-pedidos-restaurante
     env: node
     plan: free
-    rootDir: src
+    rootDir: src/backend
     buildCommand: npm ci && npm run build && echo "Build completed successfully"
     startCommand: node dist/main.js
     autoDeploy: true

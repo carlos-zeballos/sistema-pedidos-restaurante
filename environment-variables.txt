@@ -7,3 +7,4 @@ JWT_SECRET=YPGCjPXNmbNaFYVOvtznVqkmejwAFg+L/Y22fFNdy4JcqyBm0rzP3U/TrYnrT0THQeiWz
 JWT_EXPIRES_IN=24h
 CORS_ORIGIN=https://vermillion-snickerdoodle-5f1291.netlify.app
 FRONTEND_URL=https://vermillion-snickerdoodle-5f1291.netlify.app
+

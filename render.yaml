@@ -3,11 +3,11 @@ services:
     name: sistema-pedidos-restaurante
     env: node
     plan: free
-    rootDir: resto-sql/backend
-    buildCommand: npm install && npm run build
-    startCommand: node dist/main.js
+    rootDir: src/backend
+    buildCommand: npm ci && npm run build && echo "Build completed successfully"
+    startCommand: node dist/main
     autoDeploy: true
-    branch: master
+    branch: masti l
     envVars:
       - key: NODE_ENV
         value: production

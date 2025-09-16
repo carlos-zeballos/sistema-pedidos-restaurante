@@ -72,3 +72,6 @@ jspm_packages/
 # Temporary files
 *.tmp
 *.temp
+
+# Incorrect backend folder (should use resto-sql/backend)
+backend/

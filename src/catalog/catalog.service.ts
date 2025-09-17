@@ -60,7 +60,7 @@ export class CatalogService {
       
       const { data, error } = await client
         .from('Category')
-        .select('id,name,description,image,ord,isActive,createdAt,updatedAt')
+        .select('id,name,description,ord,isActive,createdAt,updatedAt')
         .eq('isActive', true)
         .order('ord', { ascending: true });
 
@@ -82,7 +82,7 @@ export class CatalogService {
   async getCategoryById(id: string) {
     const { data, error } = await this.supabaseService.getClient()
       .from('Category')
-      .select('id,name,description,image,ord,isActive,createdAt,updatedAt')
+      .select('id,name,description,ord,isActive,createdAt,updatedAt')
       .eq('id', id)
       .single();
 
@@ -211,7 +211,7 @@ export class CatalogService {
       let query = supabase
         .from('Product')
         .select(`
-          id, name, description, price, image, type,
+          id, name, description, price, type,
           "categoryId", "preparationTime", "isEnabled", "isAvailable",
           allergens, "nutritionalInfo", "createdAt", "updatedAt"
         `)
@@ -242,7 +242,7 @@ export class CatalogService {
   async getProductById(id: string) {
     const { data, error } = await this.supabaseService.getClient()
       .from('Product')
-      .select('id,name,description,price,image,type,categoryId,preparationTime,isEnabled,isAvailable,allergens,nutritionalInfo,createdAt,updatedAt')
+      .select('id,name,description,price,type,categoryId,preparationTime,isEnabled,isAvailable,allergens,nutritionalInfo,createdAt,updatedAt')
       .eq('id', id)
       .single();
 
@@ -440,22 +440,32 @@ export class CatalogService {
   // ========================================
 
   async getSpaces() {
-    const { data, error } = await this.supabaseService.getClient()
-      .from('Space')
-      .select('id,name,type,capacity,status,isActive,notes,createdAt,updatedAt')
-      .order('name', { ascending: true });
+    console.log('🔍 CatalogService.getSpaces() - Iniciando...');
+    try {
+      const { data, error } = await this.supabaseService.getClient()
+        .from('Space')
+        .select('id,name,type,capacity,isActive,notes,createdAt,updatedAt')
+        .order('name', { ascending: true });
 
-    if (error) {
-      throw new HttpException(`Error getting spaces: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      console.log('📊 Query espacios - Data:', data?.length ?? 0, 'Error:', error);
+
+      if (error) {
+        console.error('❌ Error en getSpaces:', error);
+        throw new HttpException(`Error getting spaces: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
+      console.log('✅ getSpaces exitoso - Espacios:', data?.length);
+      return data as Space[];
+    } catch (e: any) {
+      console.error('💥 Error en getSpaces():', e);
+      throw new HttpException(`Error getting spaces: ${e?.message ?? e}`, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-
-    return data as Space[];
   }
 
   async getSpaceById(id: string) {
     const { data, error } = await this.supabaseService.getClient()
       .from('Space')
-      .select('id,name,type,capacity,status,isActive,notes,createdAt,updatedAt')
+      .select('id,name,type,capacity,isActive,notes,createdAt,updatedAt')
       .eq('id', id)
       .single();
 
@@ -578,8 +588,7 @@ export class CatalogService {
       const { data, error } = await supabase
         .from('Combo')
         .select(`
-          id, name, description, "basePrice", image, "isEnabled", "isAvailable", "preparationTime", "maxSelections", "categoryId", "createdAt", "updatedAt",
-          ComboComponent(id, name, description, type, price, "isRequired", "isAvailable", "maxSelections", ord)
+          id, name, description, "basePrice", "isEnabled", "isAvailable", "preparationTime", "maxSelections", "categoryId", "createdAt", "updatedAt"
         `)
         .eq('isEnabled', true)
         .order('name');
@@ -605,8 +614,7 @@ export class CatalogService {
       const { data, error } = await this.supabaseService.getClient()
         .from('Combo')
         .select(`
-          id, name, description, "basePrice", image, "isEnabled", "isAvailable", "preparationTime", "maxSelections", "categoryId", "createdAt", "updatedAt",
-          ComboComponent(id, name, description, type, price, "isRequired", "isAvailable", "maxSelections", ord)
+          id, name, description, "basePrice", "isEnabled", "isAvailable", "preparationTime", "maxSelections", "categoryId", "createdAt", "updatedAt"
         `)
         .eq('id', id)
         .single();

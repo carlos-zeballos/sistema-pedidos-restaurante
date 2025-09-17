@@ -3,14 +3,10 @@ import { OrdersService, OrderStatus } from './orders.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
-import { SupabaseService } from '../lib/supabase.service';
 
 @Controller('orders')
 export class OrdersController {
-  constructor(
-    private readonly ordersService: OrdersService,
-    private readonly supabaseService: SupabaseService
-  ) {}
+  constructor(private readonly ordersService: OrdersService) {}
 
   // Rutas públicas (sin autenticación)
   @Get()
@@ -55,65 +51,6 @@ export class OrdersController {
         }
       ]
     };
-  }
-
-  @Get('direct')
-  async getOrdersDirect(@Query('status') status?: string) {
-    try {
-      console.log('🔍 Getting orders directly from controller...');
-      
-      // Solo obtener órdenes del día actual
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayISO = today.toISOString();
-      
-      // Query directa sin pasar por el servicio
-      let query = this.supabaseService
-        .getClient()
-        .from('Order')
-        .select('*')
-        .gte('createdAt', todayISO)
-        .order('createdAt', { ascending: false });
-
-      if (status && status !== 'ALL') {
-        const list = status.split(',').map((s) => s.trim()).filter(Boolean);
-        if (list.length > 1) {
-          query = query.in('status', list);
-        } else if (list.length === 1) {
-          query = query.eq('status', list[0]);
-        }
-      }
-
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error('❌ Direct orders query error:', error);
-        return {
-          ok: false,
-          error: error.message,
-          details: 'Direct orders query failed',
-          timestamp: new Date().toISOString()
-        };
-      }
-      
-      console.log('✅ Direct orders query successful:', data?.length || 0);
-      return {
-        ok: true,
-        message: 'Direct orders query successful',
-        orders: data,
-        count: data?.length || 0,
-        timestamp: new Date().toISOString()
-      };
-      
-    } catch (error) {
-      console.error('❌ Direct orders endpoint error:', error);
-      return {
-        ok: false,
-        error: error.message,
-        details: 'Direct orders endpoint failed',
-        timestamp: new Date().toISOString()
-      };
-    }
   }
 
   // Rutas protegidas (con autenticación) - DEBE IR ANTES DE LAS RUTAS CON PARÁMETROS
@@ -483,130 +420,6 @@ export class OrdersController {
         stack: error.stack,
         payload: body,
         timestamp: new Date().toISOString()
-      };
-    }
-  }
-
-  // Endpoint de diagnóstico de base de datos
-  @Get('test/database-check')
-  async databaseCheck() {
-    console.log('🔍 DIAGNÓSTICO DE BASE DE DATOS');
-    
-    const checks = [];
-    
-    try {
-      // Check 1: Conexión básica a Order
-      const { data: orderData, error: orderError } = await this.supabaseService
-        .getClient()
-        .from('Order')
-        .select('id, orderNumber, status')
-        .limit(1);
-        
-      checks.push({
-        name: 'Tabla Order',
-        ok: !orderError,
-        error: orderError?.message || null,
-        data: orderData
-      });
-      
-      // Check 2: Tabla OrderItem
-      const { data: itemData, error: itemError } = await this.supabaseService
-        .getClient()
-        .from('OrderItem')
-        .select('id, orderId, name')
-        .limit(1);
-        
-      checks.push({
-        name: 'Tabla OrderItem',
-        ok: !itemError,
-        error: itemError?.message || null,
-        data: itemData
-      });
-      
-      // Check 3: Tabla Space
-      const { data: spaceData, error: spaceError } = await this.supabaseService
-        .getClient()
-        .from('Space')
-        .select('id, name, type')
-        .limit(1);
-        
-      checks.push({
-        name: 'Tabla Space',
-        ok: !spaceError,
-        error: spaceError?.message || null,
-        data: spaceData
-      });
-      
-      // Check 4: Tabla Product
-      const { data: productData, error: productError } = await this.supabaseService
-        .getClient()
-        .from('Product')
-        .select('id, name, price')
-        .limit(1);
-        
-      checks.push({
-        name: 'Tabla Product',
-        ok: !productError,
-        error: productError?.message || null,
-        data: productData
-      });
-      
-      return {
-        ok: checks.every(c => c.ok),
-        message: 'Diagnóstico de base de datos completado',
-        checks,
-        timestamp: new Date().toISOString()
-      };
-      
-    } catch (error) {
-      console.error('❌ Error en diagnóstico de base de datos:', error);
-      return {
-        ok: false,
-        error: error.message,
-        checks,
-        timestamp: new Date().toISOString()
-      };
-    }
-  }
-
-  // Endpoint simplificado para obtener órdenes
-  @Get('test/simple')
-  async getOrdersSimple() {
-    try {
-      console.log('🔍 Obteniendo órdenes de forma simplificada...');
-      
-      // Consulta simplificada sin relaciones complejas
-      const { data, error } = await this.supabaseService
-        .getClient()
-        .from('Order')
-        .select('id, orderNumber, status, createdAt, customerName')
-        .order('createdAt', { ascending: false })
-        .limit(10);
-        
-      if (error) {
-        console.error('❌ Error en consulta simplificada:', error);
-        return {
-          ok: false,
-          error: error.message,
-          details: 'Error en consulta simplificada de órdenes'
-        };
-      }
-      
-      console.log('✅ Órdenes obtenidas exitosamente:', data?.length || 0);
-      return {
-        ok: true,
-        message: 'Consulta simplificada exitosa',
-        orders: data,
-        count: data?.length || 0,
-        timestamp: new Date().toISOString()
-      };
-      
-    } catch (error) {
-      console.error('❌ Error en endpoint simplificado:', error);
-      return {
-        ok: false,
-        error: error.message,
-        details: 'Error en endpoint simplificado'
       };
     }
   }

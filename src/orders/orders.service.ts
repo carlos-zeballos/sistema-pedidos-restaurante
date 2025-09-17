@@ -33,18 +33,21 @@ export class OrdersService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
   async getOrders(status?: string) {
-    console.log('🔍 OrdersService.getOrders() - VERSION 3.0 - Iniciando...');
+    console.log('🔍 OrdersService.getOrders() - VERSION 4.0 - Iniciando...');
     try {
       // Solo obtener órdenes del día actual para evitar mostrar órdenes pasadas
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const todayISO = today.toISOString();
       
-      // Consulta ultra básica - solo columnas esenciales
       let query = this.supabaseService
         .getClient()
         .from('Order')
-        .select('id, orderNumber, customerName, status, totalAmount')
+        .select(`
+          *,
+          items:OrderItem(*),
+          space:Space(*)
+        `)
         .gte('createdAt', todayISO) // Solo órdenes creadas hoy
         .order('createdAt', { ascending: false });
 
@@ -59,41 +62,41 @@ export class OrdersService {
 
       const { data, error } = await query;
       if (error) {
-        console.error('❌ Error en getOrders V3:', error);
+        console.error('❌ Error en getOrders V4:', error);
         // Si falla, devolver datos mock para que el frontend funcione
         console.log('🔄 Devolviendo datos mock para órdenes');
         return [
-          { 
-            id: 'mock-order-1', 
-            orderNumber: 'ORD-001', 
+          {
+            id: 'mock-order-1',
+            orderNumber: 'ORD-001',
             spaceId: 'mock-1',
-            customerName: 'Cliente Test', 
-            status: 'PENDIENTE', 
-            totalAmount: 25.50, 
+            customerName: 'Cliente Test',
+            status: 'PENDIENTE',
+            totalAmount: 25.50,
             notes: 'Orden de prueba',
-            createdAt: new Date(), 
-            updatedAt: new Date() 
+            createdAt: new Date(),
+            updatedAt: new Date()
           }
         ] as Order[];
       }
-      
-      console.log('✅ getOrders V3 exitoso - Órdenes:', data?.length);
+
+      console.log('✅ getOrders V4 exitoso - Órdenes:', data?.length);
       return data as Order[];
     } catch (e: any) {
-      console.error('💥 Error en getOrders V3():', e);
+      console.error('💥 Error en getOrders V4():', e);
       // En caso de error, devolver datos mock
       console.log('🔄 Devolviendo datos mock para órdenes (catch)');
       return [
-        { 
-          id: 'mock-order-1', 
-          orderNumber: 'ORD-001', 
+        {
+          id: 'mock-order-1',
+          orderNumber: 'ORD-001',
           spaceId: 'mock-1',
-          customerName: 'Cliente Test', 
-          status: 'PENDIENTE', 
-          totalAmount: 25.50, 
+          customerName: 'Cliente Test',
+          status: 'PENDIENTE',
+          totalAmount: 25.50,
           notes: 'Orden de prueba',
-          createdAt: new Date(), 
-          updatedAt: new Date() 
+          createdAt: new Date(),
+          updatedAt: new Date()
         }
       ] as Order[];
     }
@@ -107,7 +110,6 @@ export class OrdersService {
     today.setHours(0, 0, 0, 0);
     const todayISO = today.toISOString();
     
-    // Consulta simplificada sin relaciones problemáticas
     const { data, error } = await this.supabaseService
       .getClient()
       .from('Order')
@@ -122,25 +124,7 @@ export class OrdersService {
 
     if (error) {
       console.error('❌ Error obteniendo órdenes de cocina:', error);
-      // Intentar consulta básica como fallback
-      try {
-        const { data: basicData, error: basicError } = await this.supabaseService
-          .getClient()
-          .from('Order')
-          .select('*')
-          .in('status', ['PENDIENTE', 'EN_PREPARACION'])
-          .gte('createdAt', todayISO)
-          .order('createdAt', { ascending: true });
-          
-        if (basicError) {
-          throw new Error(`Error getting kitchen orders: ${basicError.message}`);
-        }
-        
-        console.log('✅ Usando consulta básica para órdenes de cocina');
-        return basicData as Order[];
-      } catch (fallbackError) {
-        throw new Error(`Error getting kitchen orders: ${error.message}`);
-      }
+      throw new Error(`Error getting kitchen orders: ${error.message}`);
     }
     
     console.log('✅ Órdenes de cocina obtenidas (solo del día actual):', data);
@@ -342,13 +326,9 @@ export class OrdersService {
       .eq('spaceId', spaceId)
       .gte('createdAt', todayISO) // Solo órdenes creadas hoy
       .order('createdAt', { ascending: false });
-      
     if (error) {
-      console.error('❌ Error obteniendo órdenes por espacio:', error);
       throw new Error(`Error getting orders by space: ${error.message}`);
     }
-    
-    console.log(`✅ Órdenes obtenidas para espacio ${spaceId}:`, data?.length || 0);
     return data as Order[];
   }
 

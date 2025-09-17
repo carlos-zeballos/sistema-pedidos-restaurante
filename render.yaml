@@ -3,8 +3,13 @@ services:
     name: sistema-pedidos-backend
     env: node
     plan: free
-    buildCommand: npm ci && npm run build && test -f dist/main.js
+    region: oregon
+    branch: main
+    rootDir: .
+    buildCommand: npm ci && npm run build
     startCommand: npm run start:prod
+    healthCheckPath: /health
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production

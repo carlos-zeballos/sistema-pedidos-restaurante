@@ -32,6 +32,7 @@ export class OrdersController {
     }
   }
 
+  // Rutas protegidas (con autenticación) - DEBE IR ANTES DE LAS RUTAS CON PARÁMETROS
   @Get('emergency')
   async getEmergencyOrders() {
     return {
@@ -53,7 +54,6 @@ export class OrdersController {
     };
   }
 
-  // Rutas protegidas (con autenticación) - DEBE IR ANTES DE LAS RUTAS CON PARÁMETROS
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('kitchen')
   @Roles('COCINERO', 'MOZO', 'ADMIN')

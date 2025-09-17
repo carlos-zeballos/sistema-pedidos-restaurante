@@ -96,8 +96,8 @@ export class CatalogController {
     return { 
       message: 'Test endpoint working - UPDATED', 
       timestamp: new Date().toISOString(),
-      version: '2.0',
-      status: 'DEPLOYED'
+      version: '3.0',
+      status: 'DEPLOYED_WITH_EMERGENCY_ENDPOINTS'
     };
   }
 

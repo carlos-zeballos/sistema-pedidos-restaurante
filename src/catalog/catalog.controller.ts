@@ -247,5 +247,47 @@ export class CatalogController {
   async getProductsForComboComponents(@Query('categoryId') categoryId?: string) {
     return this.catalogService.getProductsForComboComponents(categoryId);
   }
+
+  // ========================================
+  // ENDPOINT DE EMERGENCIA PARA COMBOS
+  // ========================================
+
+  @Get('public/combos-emergency')
+  async getCombosEmergency() {
+    return {
+      message: 'EMERGENCY COMBOS ENDPOINT - VERSION 3.2',
+      timestamp: new Date().toISOString(),
+      status: 'DEPLOYED_WITH_COMBO_FIX',
+      combos: [
+        {
+          id: '4ead756d-a9b7-4a31-a055-b26d37c66d31',
+          name: 'Combo Familiar',
+          description: 'Lomo saltado + Arroz con pollo + 2 bebidas',
+          price: 65.00,
+          isActive: true,
+          createdAt: '2025-09-14T19:55:45.615Z',
+          updatedAt: '2025-09-14T19:55:45.615Z'
+        },
+        {
+          id: 'c49a5769-af4b-4f8a-b27d-7242a4f2a71a',
+          name: 'Combo Sushi',
+          description: 'Roll California + Roll Philadelphia + 1 bebida',
+          price: 45.00,
+          isActive: true,
+          createdAt: '2025-09-14T19:55:45.615Z',
+          updatedAt: '2025-09-14T19:55:45.615Z'
+        },
+        {
+          id: 'da7500a9-fead-4f9e-a2d6-362025af476a',
+          name: 'Combo Postre',
+          description: 'Tiramisu + Helado de lúcuma + 1 bebida',
+          price: 25.00,
+          isActive: true,
+          createdAt: '2025-09-14T19:55:45.615Z',
+          updatedAt: '2025-09-14T19:55:45.615Z'
+        }
+      ]
+    };
+  }
 }
 

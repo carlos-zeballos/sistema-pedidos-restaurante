@@ -83,7 +83,12 @@ export class CatalogController {
 
   @Get('public/test')
   async testPublic() {
-    return { message: 'Test endpoint working', timestamp: new Date().toISOString() };
+    return { 
+      message: 'Test endpoint working - UPDATED', 
+      timestamp: new Date().toISOString(),
+      version: '2.0',
+      status: 'DEPLOYED'
+    };
   }
 
   @Get('public/connection-test')

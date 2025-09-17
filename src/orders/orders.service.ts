@@ -43,11 +43,7 @@ export class OrdersService {
       let query = this.supabaseService
         .getClient()
         .from('Order')
-        .select(`
-          *,
-          items:OrderItem(*),
-          space:Space(*)
-        `)
+        .select('id, orderNumber, customerName, status, totalAmount')
         .gte('createdAt', todayISO) // Solo órdenes creadas hoy
         .order('createdAt', { ascending: false });
 

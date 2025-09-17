@@ -8,34 +8,34 @@ async function bootstrap() {
   try {
     const app = await NestFactory.create(AppModule);
     
-    // Configurar CORS más agresivo para resolver problemas inmediatos
+    // Configurar CORS para permitir el frontend de Netlify
     app.enableCors({
-      origin: true, // Permitir todos los orígenes temporalmente
+      origin: [
+        'https://precious-travesseiro-c0f1d0.netlify.app',
+        'https://sistema-pedidos-kurp.netlify.app',
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://localhost:3001'
+      ],
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
-      allowedHeaders: '*',
-      exposedHeaders: '*',
+      allowedHeaders: [
+        'Origin',
+        'X-Requested-With',
+        'Content-Type',
+        'Accept',
+        'Authorization',
+        'Cache-Control',
+        'Pragma'
+      ],
+      exposedHeaders: ['Authorization'],
       preflightContinue: false,
       optionsSuccessStatus: 200
     });
     
-    // Middleware simplificado para manejar preflight OPTIONS requests
+    // Middleware para logging de requests
     app.use((req, res, next) => {
       console.log(`${req.method} ${req.url} - Origin: ${req.headers.origin}`);
-      
-      // Aplicar headers CORS a todas las respuestas
-      res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
-      res.header('Access-Control-Allow-Headers', '*');
-      res.header('Access-Control-Allow-Credentials', 'true');
-      res.header('Access-Control-Max-Age', '86400');
-      res.header('Access-Control-Expose-Headers', '*');
-      
-      if (req.method === 'OPTIONS') {
-        console.log('🔄 Handling OPTIONS preflight request');
-        return res.status(200).end();
-      }
-      
       next();
     });
 

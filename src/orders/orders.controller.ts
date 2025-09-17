@@ -21,19 +21,40 @@ export class OrdersController {
       console.error('❌ Error en getOrders, devolviendo datos mock:', error);
       // Devolver datos mock si falla la base de datos
       return [
-        { 
-          id: 'mock-order-1', 
-          orderNumber: 'ORD-001', 
+        {
+          id: 'mock-order-1',
+          orderNumber: 'ORD-001',
           spaceId: 'mock-1',
-          customerName: 'Cliente Test', 
-          status: 'PENDIENTE', 
-          totalAmount: 25.50, 
+          customerName: 'Cliente Test',
+          status: 'PENDIENTE',
+          totalAmount: 25.50,
           notes: 'Orden de prueba',
-          createdAt: new Date(), 
-          updatedAt: new Date() 
+          createdAt: new Date(),
+          updatedAt: new Date()
         }
       ];
     }
+  }
+
+  @Get('emergency')
+  async getEmergencyOrders() {
+    return {
+      message: 'EMERGENCY ORDERS ENDPOINT',
+      timestamp: new Date().toISOString(),
+      orders: [
+        {
+          id: 'emergency-order-1',
+          orderNumber: 'EMERGENCY-001',
+          spaceId: 'emergency-1',
+          customerName: 'Cliente Emergency',
+          status: 'PENDIENTE',
+          totalAmount: 50.00,
+          notes: 'Orden de emergencia',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ]
+    };
   }
 
   @Get('direct')

@@ -91,6 +91,32 @@ export class CatalogController {
     };
   }
 
+  @Get('public/emergency-test')
+  async emergencyTest() {
+    return { 
+      message: 'EMERGENCY TEST ENDPOINT - V3.0', 
+      timestamp: new Date().toISOString(),
+      version: '3.0',
+      status: 'EMERGENCY_DEPLOYED',
+      spaces: [
+        { id: 'emergency-1', name: 'Mesa Emergency 1', type: 'MESA', capacity: 4, isActive: true },
+        { id: 'emergency-2', name: 'Mesa Emergency 2', type: 'MESA', capacity: 4, isActive: true },
+        { id: 'emergency-3', name: 'Delivery Emergency', type: 'DELIVERY', capacity: 1, isActive: true }
+      ],
+      orders: [
+        { 
+          id: 'emergency-order-1', 
+          orderNumber: 'EMERGENCY-001', 
+          spaceId: 'emergency-1',
+          customerName: 'Cliente Emergency', 
+          status: 'PENDIENTE', 
+          totalAmount: 50.00, 
+          notes: 'Orden de emergencia'
+        }
+      ]
+    };
+  }
+
   @Get('public/connection-test')
   async testConnection() {
     try {

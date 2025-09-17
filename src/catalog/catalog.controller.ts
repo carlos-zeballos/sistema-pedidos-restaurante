@@ -3,13 +3,17 @@ import { CatalogService } from './catalog.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { SupabaseService } from '../lib/supabase.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 import { CreateSpaceDto, UpdateSpaceDto } from './dto/space.dto';
 
 @Controller('catalog')
 export class CatalogController {
-  constructor(private readonly catalogService: CatalogService) {}
+  constructor(
+    private readonly catalogService: CatalogService,
+    private readonly supabaseService: SupabaseService
+  ) {}
 
   // ========================================
   // ENDPOINTS PÚBLICOS PARA TESTING
@@ -38,6 +42,62 @@ export class CatalogController {
   @Get('public/test')
   async testPublic() {
     return { message: 'Test endpoint working', timestamp: new Date().toISOString() };
+  }
+
+  @Get('public/diagnose-tables')
+  async diagnoseTables() {
+    try {
+      console.log('🔍 Diagnóstico de tablas de catalog...');
+      
+      const results = {};
+      
+      // Probar cada tabla con consultas básicas
+      const tables = ['Category', 'Product', 'Space', 'Combo'];
+      
+      for (const table of tables) {
+        try {
+          console.log(`🔍 Probando tabla: ${table}`);
+          
+          // Consulta básica solo con id
+          const { data, error } = await this.supabaseService
+            .getClient()
+            .from(table)
+            .select('id')
+            .limit(1);
+            
+          results[table] = {
+            exists: !error,
+            error: error?.message || null,
+            hasData: data && data.length > 0
+          };
+          
+          console.log(`✅ ${table}:`, results[table]);
+          
+        } catch (tableError) {
+          results[table] = {
+            exists: false,
+            error: tableError.message,
+            hasData: false
+          };
+          console.log(`❌ ${table}:`, results[table]);
+        }
+      }
+      
+      return {
+        ok: true,
+        message: 'Diagnóstico de tablas completado',
+        tables: results,
+        timestamp: new Date().toISOString()
+      };
+      
+    } catch (error) {
+      console.error('❌ Error en diagnóstico:', error);
+      return {
+        ok: false,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
+    }
   }
 
   @Get('public/categories-direct')

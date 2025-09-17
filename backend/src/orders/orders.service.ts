@@ -41,9 +41,9 @@ export class OrdersService {
     let query = this.supabaseService
       .getClient()
       .from('Order')
-      .select('id, orderNumber, customerName, status, totalAmount')
-      .gte('createdAt', todayISO) // Solo órdenes creadas hoy
-      .order('createdAt', { ascending: false });
+      .select('id, "orderNumber", "customerName", status, "totalAmount"')
+      .gte('"createdAt"', todayISO) // Solo órdenes creadas hoy
+      .order('"createdAt"', { ascending: false });
 
     if (status && status !== 'ALL') {
       const list = status.split(',').map((s) => s.trim()).filter(Boolean);
@@ -96,8 +96,8 @@ export class OrdersService {
         space:Space(*)
       `)
       .in('status', ['PENDIENTE', 'EN_PREPARACION'])
-      .gte('createdAt', todayISO) // Solo órdenes creadas hoy
-      .order('createdAt', { ascending: true });
+      .gte('"createdAt"', todayISO) // Solo órdenes creadas hoy
+      .order('"createdAt"', { ascending: true });
 
     if (error) {
       console.error('❌ Error obteniendo órdenes de cocina:', error);
@@ -189,7 +189,7 @@ export class OrdersService {
       .from('OrderStatusHistory')
       .insert([
         {
-          orderId: id,
+          "orderId": id,
           status,
         },
       ]);
@@ -221,7 +221,7 @@ export class OrdersService {
           .getClient()
           .from('OrderPayment')
           .insert({
-            orderId: id,
+            "orderId": id,
             method: 'EFECTIVO',
             amount: order.totalAmount || 0,
           });
@@ -261,7 +261,7 @@ export class OrdersService {
       .from('OrderItem')
       .delete()
       .eq('id', itemId)
-      .eq('orderId', orderId);
+      .eq('"orderId"', orderId);
 
     if (error) {
       throw new Error(`Error removing item from order: ${error.message}`);
@@ -277,11 +277,11 @@ export class OrdersService {
       .update({
         quantity: modifications.quantity,
         notes: modifications.notes,
-        totalPrice: modifications.quantity * (modifications.unitPrice || 0),
-        updatedAt: new Date().toISOString()
+        "totalPrice": modifications.quantity * (modifications.unitPrice || 0),
+        "updatedAt": new Date().toISOString()
       })
       .eq('id', itemId)
-      .eq('orderId', orderId);
+      .eq('"orderId"', orderId);
 
     if (error) {
       throw new Error(`Error modifying item in order: ${error.message}`);
@@ -300,9 +300,9 @@ export class OrdersService {
       .getClient()
       .from('Order')
       .select('*')
-      .eq('spaceId', spaceId)
-      .gte('createdAt', todayISO) // Solo órdenes creadas hoy
-      .order('createdAt', { ascending: false });
+      .eq('"spaceId"', spaceId)
+      .gte('"createdAt"', todayISO) // Solo órdenes creadas hoy
+      .order('"createdAt"', { ascending: false });
     if (error) {
       throw new Error(`Error getting orders by space: ${error.message}`);
     }
@@ -394,16 +394,16 @@ export class OrdersService {
       console.log('✅ Orden encontrada:', { orderId: order.id, status: order.status, totalAmount: order.totalAmount });
 
     const rows = items.map((it) => ({
-      orderId: orderId,
-      productId: it.productId ?? null,
-      comboId: it.comboId ?? null,
+      "orderId": orderId,
+      "productId": it.productId ?? null,
+      "comboId": it.comboId ?? null,
       name: it.name,
-      unitPrice: it.unitPrice,
-      totalPrice: it.totalPrice,
+      "unitPrice": it.unitPrice,
+      "totalPrice": it.totalPrice,
       quantity: it.quantity ?? 1,
       status: 'PENDIENTE',
       notes: it.notes ?? null,
-      createdAt: new Date().toISOString(), // Timestamp de creación (ya incluye 'Z')
+      "createdAt": new Date().toISOString(), // Timestamp de creación (ya incluye 'Z')
     }));
 
       console.log('📝 Preparando items para insertar:', rows);
@@ -431,8 +431,8 @@ export class OrdersService {
       .getClient()
       .from('Order')
       .update({
-        totalAmount: updatedTotalAmount,
-        updatedAt: new Date().toISOString(), // Timestamp de actualización (ya incluye 'Z')
+        "totalAmount": updatedTotalAmount,
+        "updatedAt": new Date().toISOString(), // Timestamp de actualización (ya incluye 'Z')
       })
       .eq('id', orderId);
 
@@ -452,9 +452,9 @@ export class OrdersService {
       .getClient()
       .from('Order')
       .update({
-        totalAmount: updatedTotalAmount,
+        "totalAmount": updatedTotalAmount,
         status: newStatus,
-        updatedAt: new Date().toISOString()
+        "updatedAt": new Date().toISOString()
       })
       .eq('id', orderId);
 
@@ -494,10 +494,10 @@ export class OrdersService {
     const { data: item, error: itemErr } = await this.supabaseService
       .getClient()
       .from('OrderItem')
-      .select('id, orderId')
+      .select('id, "orderId"')
       .eq('id', itemId)
       .single();
-    if (itemErr || !item || item.orderId !== orderId) {
+    if (itemErr || !item || item["orderId"] !== orderId) {
       throw new NotFoundException(
         `Item ${itemId} no pertenece a la orden ${orderId}`,
       );
@@ -521,10 +521,10 @@ export class OrdersService {
     const { data: item, error: itemErr } = await this.supabaseService
       .getClient()
       .from('OrderItem')
-      .select('id, orderId')
+      .select('id, "orderId"')
       .eq('id', itemId)
       .single();
-    if (itemErr || !item || item.orderId !== orderId) {
+    if (itemErr || !item || item["orderId"] !== orderId) {
       throw new NotFoundException(
         `Item ${itemId} no pertenece a la orden ${orderId}`,
       );

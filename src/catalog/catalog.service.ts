@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, HttpException, HttpStatus } from '@nestjs/common';
 import { SupabaseService } from '../lib/supabase.service';
 
-// FORZAR DEPLOY: Aplicar correcciones SQL
+// FORZAR DEPLOY: Aplicar correcciones SQL - VERSION 3.1
 
 export interface Category {
   id: string;

@@ -36,7 +36,7 @@ export class OrdersController {
   @Get('emergency')
   async getEmergencyOrders() {
     return {
-      message: 'EMERGENCY ORDERS ENDPOINT',
+      message: 'EMERGENCY ORDERS ENDPOINT - VERSION 3.1',
       timestamp: new Date().toISOString(),
       orders: [
         {

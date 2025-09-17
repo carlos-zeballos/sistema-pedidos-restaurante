@@ -9,8 +9,8 @@ export class VersionController {
       startedAt: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development',
       port: process.env.PORT || 'unknown',
-      version: '3.0',
-      status: 'DEPLOYED_WITH_FIXES'
+      version: '3.1',
+      status: 'DEPLOYED_WITH_VERSION_FIX'
     };
   }
 }

@@ -38,15 +38,13 @@ export class OrdersService {
     today.setHours(0, 0, 0, 0);
     const todayISO = today.toISOString();
     
+    // Consulta simplificada sin relaciones problemáticas
     let query = this.supabaseService
       .getClient()
       .from('Order')
       .select(`
         *,
-        items:OrderItem(
-          *,
-          components:OrderItemComponent(*)
-        ),
+        items:OrderItem(*),
         space:Space(*)
       `)
       .gte('createdAt', todayISO) // Solo órdenes creadas hoy
@@ -63,7 +61,35 @@ export class OrdersService {
 
     const { data, error } = await query;
     if (error) {
-      throw new Error(`Error getting orders: ${error.message}`);
+      console.error('❌ Error en getOrders:', error);
+      // Si hay error con relaciones, intentar consulta básica
+      try {
+        const basicQuery = this.supabaseService
+          .getClient()
+          .from('Order')
+          .select('*')
+          .gte('createdAt', todayISO)
+          .order('createdAt', { ascending: false });
+          
+        if (status && status !== 'ALL') {
+          const list = status.split(',').map((s) => s.trim()).filter(Boolean);
+          if (list.length > 1) {
+            basicQuery.in('status', list);
+          } else if (list.length === 1) {
+            basicQuery.eq('status', list[0]);
+          }
+        }
+        
+        const { data: basicData, error: basicError } = await basicQuery;
+        if (basicError) {
+          throw new Error(`Error getting orders: ${basicError.message}`);
+        }
+        
+        console.log('✅ Usando consulta básica como fallback');
+        return basicData as Order[];
+      } catch (fallbackError) {
+        throw new Error(`Error getting orders: ${error.message}`);
+      }
     }
     return data as Order[];
   }
@@ -76,15 +102,13 @@ export class OrdersService {
     today.setHours(0, 0, 0, 0);
     const todayISO = today.toISOString();
     
+    // Consulta simplificada sin relaciones problemáticas
     const { data, error } = await this.supabaseService
       .getClient()
       .from('Order')
       .select(`
         *,
-        items:OrderItem(
-          *,
-          components:OrderItemComponent(*)
-        ),
+        items:OrderItem(*),
         space:Space(*)
       `)
       .in('status', ['PENDIENTE', 'EN_PREPARACION'])
@@ -93,7 +117,25 @@ export class OrdersService {
 
     if (error) {
       console.error('❌ Error obteniendo órdenes de cocina:', error);
-      throw new Error(`Error getting kitchen orders: ${error.message}`);
+      // Intentar consulta básica como fallback
+      try {
+        const { data: basicData, error: basicError } = await this.supabaseService
+          .getClient()
+          .from('Order')
+          .select('*')
+          .in('status', ['PENDIENTE', 'EN_PREPARACION'])
+          .gte('createdAt', todayISO)
+          .order('createdAt', { ascending: true });
+          
+        if (basicError) {
+          throw new Error(`Error getting kitchen orders: ${basicError.message}`);
+        }
+        
+        console.log('✅ Usando consulta básica para órdenes de cocina');
+        return basicData as Order[];
+      } catch (fallbackError) {
+        throw new Error(`Error getting kitchen orders: ${error.message}`);
+      }
     }
     
     console.log('✅ Órdenes de cocina obtenidas (solo del día actual):', data);
@@ -295,9 +337,13 @@ export class OrdersService {
       .eq('spaceId', spaceId)
       .gte('createdAt', todayISO) // Solo órdenes creadas hoy
       .order('createdAt', { ascending: false });
+      
     if (error) {
+      console.error('❌ Error obteniendo órdenes por espacio:', error);
       throw new Error(`Error getting orders by space: ${error.message}`);
     }
+    
+    console.log(`✅ Órdenes obtenidas para espacio ${spaceId}:`, data?.length || 0);
     return data as Order[];
   }
 

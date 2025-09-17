@@ -51,7 +51,12 @@ async function bootstrap() {
       app.useGlobalFilters(new AllExceptionsFilter());
     }
     
-    const port = process.env.PORT || 3001;
+    // Health check endpoint para Render
+    app.getHttpAdapter().get('/health', (_req, res) => {
+      res.status(200).send('ok');
+    });
+    
+    const port = process.env.PORT || 10000;
     await app.listen(port);
     
     console.log(`🚀 Application is running on: http://localhost:${port}`);

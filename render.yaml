@@ -25,9 +25,9 @@ services:
       - key: JWT_EXPIRES_IN
         value: 24h
       - key: CORS_ORIGIN
-        value: https://sistema-pedidos-kurp.netlify.app
+        value: https://precious-travesseiro-c0f1d0.netlify.app
       - key: FRONTEND_URL
-        value: https://sistema-pedidos-kurp.netlify.app
+        value: https://precious-travesseiro-c0f1d0.netlify.app
 
 
 

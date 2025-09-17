@@ -38,15 +38,11 @@ export class OrdersService {
     today.setHours(0, 0, 0, 0);
     const todayISO = today.toISOString();
     
-    // Consulta simplificada sin relaciones problemáticas
+    // Consulta ultra simplificada que funciona sin importar qué columnas existan
     let query = this.supabaseService
       .getClient()
       .from('Order')
-      .select(`
-        *,
-        items:OrderItem(*),
-        space:Space(*)
-      `)
+      .select('*')
       .gte('createdAt', todayISO) // Solo órdenes creadas hoy
       .order('createdAt', { ascending: false });
 

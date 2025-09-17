@@ -58,9 +58,10 @@ export class CatalogService {
       const client = this.supabaseService.getClient();
       console.log('✅ Cliente Supabase obtenido');
       
+      // Consulta básica que funciona sin importar qué columnas existan
       const { data, error } = await client
         .from('Category')
-        .select('id,name,description,ord,isActive,createdAt,updatedAt')
+        .select('*')
         .eq('isActive', true)
         .order('ord', { ascending: true });
 
@@ -208,13 +209,10 @@ export class CatalogService {
     try {
       const supabase = this.supabaseService.getClient();
 
+      // Consulta básica que funciona sin importar qué columnas existan
       let query = supabase
         .from('Product')
-        .select(`
-          id, name, description, price, type,
-          "categoryId", "preparationTime", "isEnabled", "isAvailable",
-          allergens, "nutritionalInfo", "createdAt", "updatedAt"
-        `)
+        .select('*')
         .eq('isEnabled', true)
         .order('name', { ascending: true });
 
@@ -442,9 +440,10 @@ export class CatalogService {
   async getSpaces() {
     console.log('🔍 CatalogService.getSpaces() - Iniciando...');
     try {
+      // Consulta básica que funciona sin importar qué columnas existan
       const { data, error } = await this.supabaseService.getClient()
         .from('Space')
-        .select('id,name,type,capacity,isActive,notes,createdAt,updatedAt')
+        .select('*')
         .order('name', { ascending: true });
 
       console.log('📊 Query espacios - Data:', data?.length ?? 0, 'Error:', error);
@@ -585,11 +584,10 @@ export class CatalogService {
     try {
       const supabase = this.supabaseService.getClient();
       
+      // Consulta básica que funciona sin importar qué columnas existan
       const { data, error } = await supabase
         .from('Combo')
-        .select(`
-          id, name, description, "basePrice", "isEnabled", "isAvailable", "preparationTime", "maxSelections", "categoryId", "createdAt", "updatedAt"
-        `)
+        .select('*')
         .eq('isEnabled', true)
         .order('name');
 

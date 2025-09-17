@@ -5,7 +5,7 @@ services:
     plan: free
     region: oregon
     branch: main
-    rootDir: resto-sql/backend
+    rootDir: .
     buildCommand: npm ci && npm run build
     startCommand: npm run start:prod
     healthCheckPath: /health

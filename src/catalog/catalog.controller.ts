@@ -44,6 +44,47 @@ export class CatalogController {
     return { message: 'Test endpoint working', timestamp: new Date().toISOString() };
   }
 
+  @Get('public/db-test')
+  async testDatabase() {
+    try {
+      console.log('🔍 Testing database connection...');
+      
+      // Test basic database connection
+      const { data, error } = await this.supabaseService
+        .getClient()
+        .from('Space')
+        .select('id')
+        .limit(1);
+        
+      if (error) {
+        console.error('❌ Database test failed:', error);
+        return {
+          ok: false,
+          error: error.message,
+          details: 'Database connection test failed',
+          timestamp: new Date().toISOString()
+        };
+      }
+      
+      console.log('✅ Database test successful');
+      return {
+        ok: true,
+        message: 'Database connection working',
+        data: data,
+        timestamp: new Date().toISOString()
+      };
+      
+    } catch (error) {
+      console.error('❌ Database test error:', error);
+      return {
+        ok: false,
+        error: error.message,
+        details: 'Database test error',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
   @Get('public/diagnose-tables')
   async diagnoseTables() {
     try {

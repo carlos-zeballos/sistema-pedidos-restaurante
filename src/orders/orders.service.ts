@@ -33,61 +33,92 @@ export class OrdersService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
   async getOrders(status?: string) {
-    // Solo obtener órdenes del día actual para evitar mostrar órdenes pasadas
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayISO = today.toISOString();
-    
-    // Consulta ultra simplificada que funciona sin importar qué columnas existan
-    let query = this.supabaseService
-      .getClient()
-      .from('Order')
-      .select('*')
-      .gte('createdAt', todayISO) // Solo órdenes creadas hoy
-      .order('createdAt', { ascending: false });
+    console.log('🔍 OrdersService.getOrders() - Iniciando...');
+    try {
+      // Solo obtener órdenes del día actual para evitar mostrar órdenes pasadas
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayISO = today.toISOString();
+      
+      // Consulta ultra básica que solo selecciona columnas esenciales
+      let query = this.supabaseService
+        .getClient()
+        .from('Order')
+        .select('id, orderNumber, spaceId, customerName, status, totalAmount, notes, createdAt, updatedAt')
+        .gte('createdAt', todayISO) // Solo órdenes creadas hoy
+        .order('createdAt', { ascending: false });
 
-    if (status && status !== 'ALL') {
-      const list = status.split(',').map((s) => s.trim()).filter(Boolean);
-      if (list.length > 1) {
-        query = query.in('status', list);
-      } else if (list.length === 1) {
-        query = query.eq('status', list[0]);
+      if (status && status !== 'ALL') {
+        const list = status.split(',').map((s) => s.trim()).filter(Boolean);
+        if (list.length > 1) {
+          query = query.in('status', list);
+        } else if (list.length === 1) {
+          query = query.eq('status', list[0]);
+        }
       }
-    }
 
-    const { data, error } = await query;
-    if (error) {
-      console.error('❌ Error en getOrders:', error);
-      // Si hay error con relaciones, intentar consulta básica
-      try {
-        const basicQuery = this.supabaseService
-          .getClient()
-          .from('Order')
-          .select('*')
-          .gte('createdAt', todayISO)
-          .order('createdAt', { ascending: false });
-          
-        if (status && status !== 'ALL') {
-          const list = status.split(',').map((s) => s.trim()).filter(Boolean);
-          if (list.length > 1) {
-            basicQuery.in('status', list);
-          } else if (list.length === 1) {
-            basicQuery.eq('status', list[0]);
+      const { data, error } = await query;
+      if (error) {
+        console.error('❌ Error en getOrders:', error);
+        // Intentar consulta aún más básica como fallback
+        try {
+          const basicQuery = this.supabaseService
+            .getClient()
+            .from('Order')
+            .select('id, orderNumber, customerName, status, totalAmount')
+            .gte('createdAt', todayISO)
+            .order('createdAt', { ascending: false });
+            
+          if (status && status !== 'ALL') {
+            const list = status.split(',').map((s) => s.trim()).filter(Boolean);
+            if (list.length > 1) {
+              basicQuery.in('status', list);
+            } else if (list.length === 1) {
+              basicQuery.eq('status', list[0]);
+            }
           }
+          
+          const { data: basicData, error: basicError } = await basicQuery;
+          if (basicError) {
+            // Último recurso: consulta mínima
+            const minimalQuery = this.supabaseService
+              .getClient()
+              .from('Order')
+              .select('id, orderNumber, status')
+              .gte('createdAt', todayISO)
+              .order('createdAt', { ascending: false });
+              
+            if (status && status !== 'ALL') {
+              const list = status.split(',').map((s) => s.trim()).filter(Boolean);
+              if (list.length > 1) {
+                minimalQuery.in('status', list);
+              } else if (list.length === 1) {
+                minimalQuery.eq('status', list[0]);
+              }
+            }
+            
+            const { data: minimalData, error: minimalError } = await minimalQuery;
+            if (minimalError) {
+              throw new Error(`Error getting orders: ${basicError.message}`);
+            }
+            
+            console.log('✅ Usando consulta mínima como último recurso');
+            return minimalData as Order[];
+          }
+          
+          console.log('✅ Usando consulta básica como fallback');
+          return basicData as Order[];
+        } catch (fallbackError) {
+          throw new Error(`Error getting orders: ${error.message}`);
         }
-        
-        const { data: basicData, error: basicError } = await basicQuery;
-        if (basicError) {
-          throw new Error(`Error getting orders: ${basicError.message}`);
-        }
-        
-        console.log('✅ Usando consulta básica como fallback');
-        return basicData as Order[];
-      } catch (fallbackError) {
-        throw new Error(`Error getting orders: ${error.message}`);
       }
+      
+      console.log('✅ getOrders exitoso - Órdenes:', data?.length);
+      return data as Order[];
+    } catch (e: any) {
+      console.error('💥 Error en getOrders():', e);
+      throw new Error(`Error getting orders: ${e?.message ?? e}`);
     }
-    return data as Order[];
   }
 
   async getKitchenOrders() {

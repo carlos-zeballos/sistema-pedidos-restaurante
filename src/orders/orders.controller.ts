@@ -18,6 +18,65 @@ export class OrdersController {
     return this.ordersService.getOrders(status);
   }
 
+  @Get('direct')
+  async getOrdersDirect(@Query('status') status?: string) {
+    try {
+      console.log('🔍 Getting orders directly from controller...');
+      
+      // Solo obtener órdenes del día actual
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayISO = today.toISOString();
+      
+      // Query directa sin pasar por el servicio
+      let query = this.supabaseService
+        .getClient()
+        .from('Order')
+        .select('*')
+        .gte('createdAt', todayISO)
+        .order('createdAt', { ascending: false });
+
+      if (status && status !== 'ALL') {
+        const list = status.split(',').map((s) => s.trim()).filter(Boolean);
+        if (list.length > 1) {
+          query = query.in('status', list);
+        } else if (list.length === 1) {
+          query = query.eq('status', list[0]);
+        }
+      }
+
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('❌ Direct orders query error:', error);
+        return {
+          ok: false,
+          error: error.message,
+          details: 'Direct orders query failed',
+          timestamp: new Date().toISOString()
+        };
+      }
+      
+      console.log('✅ Direct orders query successful:', data?.length || 0);
+      return {
+        ok: true,
+        message: 'Direct orders query successful',
+        orders: data,
+        count: data?.length || 0,
+        timestamp: new Date().toISOString()
+      };
+      
+    } catch (error) {
+      console.error('❌ Direct orders endpoint error:', error);
+      return {
+        ok: false,
+        error: error.message,
+        details: 'Direct orders endpoint failed',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
   // Rutas protegidas (con autenticación) - DEBE IR ANTES DE LAS RUTAS CON PARÁMETROS
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('kitchen')

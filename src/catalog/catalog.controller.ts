@@ -34,6 +34,48 @@ export class CatalogController {
     return this.catalogService.getSpaces();
   }
 
+  @Get('public/spaces-direct')
+  async getSpacesDirect() {
+    try {
+      console.log('🔍 Getting spaces directly from controller...');
+      
+      // Query directa sin pasar por el servicio
+      const { data, error } = await this.supabaseService
+        .getClient()
+        .from('Space')
+        .select('*')
+        .order('name', { ascending: true });
+        
+      if (error) {
+        console.error('❌ Direct spaces query error:', error);
+        return {
+          ok: false,
+          error: error.message,
+          details: 'Direct spaces query failed',
+          timestamp: new Date().toISOString()
+        };
+      }
+      
+      console.log('✅ Direct spaces query successful:', data?.length || 0);
+      return {
+        ok: true,
+        message: 'Direct spaces query successful',
+        spaces: data,
+        count: data?.length || 0,
+        timestamp: new Date().toISOString()
+      };
+      
+    } catch (error) {
+      console.error('❌ Direct spaces endpoint error:', error);
+      return {
+        ok: false,
+        error: error.message,
+        details: 'Direct spaces endpoint failed',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
   @Get('public/combos')
   async getCombosPublic() {
     return this.catalogService.getCombos();
@@ -42,6 +84,58 @@ export class CatalogController {
   @Get('public/test')
   async testPublic() {
     return { message: 'Test endpoint working', timestamp: new Date().toISOString() };
+  }
+
+  @Get('public/connection-test')
+  async testConnection() {
+    try {
+      console.log('🔍 Testing Supabase connection...');
+      
+      // Test 1: Basic connection
+      const client = this.supabaseService.getClient();
+      console.log('✅ Supabase client created');
+      
+      // Test 2: Try to query any table with minimal data
+      const { data, error } = await client
+        .from('Space')
+        .select('id')
+        .limit(1);
+        
+      if (error) {
+        console.error('❌ Space table error:', error);
+        
+        // Try a different approach - check if table exists
+        const { data: anyData, error: anyError } = await client
+          .from('Space')
+          .select('*')
+          .limit(0);
+          
+        if (anyError) {
+          return {
+            ok: false,
+            error: anyError.message,
+            details: 'Cannot access Space table',
+            timestamp: new Date().toISOString()
+          };
+        }
+      }
+      
+      return {
+        ok: true,
+        message: 'Connection test successful',
+        data: data,
+        timestamp: new Date().toISOString()
+      };
+      
+    } catch (error) {
+      console.error('❌ Connection test failed:', error);
+      return {
+        ok: false,
+        error: error.message,
+        details: 'Connection test failed',
+        timestamp: new Date().toISOString()
+      };
+    }
   }
 
   @Get('public/db-test')

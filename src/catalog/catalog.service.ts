@@ -653,9 +653,9 @@ export class CatalogService {
       const { data, error } = await supabase
         .from('Combo')
         .select(`
-          id, name, description, "basePrice", "isEnabled", "isAvailable", "preparationTime", "maxSelections", "categoryId", "createdAt", "updatedAt"
-        `) // Removed image and ComboComponent relationship
-        .eq('isEnabled', true)
+          id, name, description, price, "isActive", "createdAt", "updatedAt"
+        `) // Using correct column names from your database
+        .eq('isActive', true)
         .order('name');
 
       console.log('📊 Query combos - Data:', data?.length ?? 0, 'Error:', error);
@@ -666,43 +666,31 @@ export class CatalogService {
         console.log('🔄 Devolviendo datos mock para combos');
         return [
           {
-            id: 'mock-combo-1',
-            name: 'Naskama',
-            description: 'Combo Naskama tradicional',
-            basePrice: 25.00,
-            isEnabled: true,
-            isAvailable: true,
-            preparationTime: 15,
-            maxSelections: 3,
-            categoryId: 'mock-cat-1',
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            id: '4ead756d-a9b7-4a31-a055-b26d37c66d31',
+            name: 'Combo Familiar',
+            description: 'Lomo saltado + Arroz con pollo + 2 bebidas',
+            price: 65.00,
+            isActive: true,
+            createdAt: new Date('2025-09-14T19:55:45.615Z'),
+            updatedAt: new Date('2025-09-14T19:55:45.615Z'),
           },
           {
-            id: 'mock-combo-2',
-            name: 'Barco Nikkei',
-            description: 'Combo Barco Nikkei especial',
-            basePrice: 35.00,
-            isEnabled: true,
-            isAvailable: true,
-            preparationTime: 20,
-            maxSelections: 4,
-            categoryId: 'mock-cat-1',
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            id: 'c49a5769-af4b-4f8a-b27d-7242a4f2a71a',
+            name: 'Combo Sushi',
+            description: 'Roll California + Roll Philadelphia + 1 bebida',
+            price: 45.00,
+            isActive: true,
+            createdAt: new Date('2025-09-14T19:55:45.615Z'),
+            updatedAt: new Date('2025-09-14T19:55:45.615Z'),
           },
           {
-            id: 'mock-combo-3',
-            name: 'Bentos',
-            description: 'Combo Bentos japonés',
-            basePrice: 30.00,
-            isEnabled: true,
-            isAvailable: true,
-            preparationTime: 18,
-            maxSelections: 3,
-            categoryId: 'mock-cat-1',
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            id: 'da7500a9-fead-4f9e-a2d6-362025af476a',
+            name: 'Combo Postre',
+            description: 'Tiramisu + Helado de lúcuma + 1 bebida',
+            price: 25.00,
+            isActive: true,
+            createdAt: new Date('2025-09-14T19:55:45.615Z'),
+            updatedAt: new Date('2025-09-14T19:55:45.615Z'),
           },
         ];
       }
@@ -715,43 +703,31 @@ export class CatalogService {
       console.log('🔄 Devolviendo datos mock para combos (catch)');
       return [
         {
-          id: 'mock-combo-1',
-          name: 'Naskama',
-          description: 'Combo Naskama tradicional',
-          basePrice: 25.00,
-          isEnabled: true,
-          isAvailable: true,
-          preparationTime: 15,
-          maxSelections: 3,
-          categoryId: 'mock-cat-1',
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          id: '4ead756d-a9b7-4a31-a055-b26d37c66d31',
+          name: 'Combo Familiar',
+          description: 'Lomo saltado + Arroz con pollo + 2 bebidas',
+          price: 65.00,
+          isActive: true,
+          createdAt: new Date('2025-09-14T19:55:45.615Z'),
+          updatedAt: new Date('2025-09-14T19:55:45.615Z'),
         },
         {
-          id: 'mock-combo-2',
-          name: 'Barco Nikkei',
-          description: 'Combo Barco Nikkei especial',
-          basePrice: 35.00,
-          isEnabled: true,
-          isAvailable: true,
-          preparationTime: 20,
-          maxSelections: 4,
-          categoryId: 'mock-cat-1',
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          id: 'c49a5769-af4b-4f8a-b27d-7242a4f2a71a',
+          name: 'Combo Sushi',
+          description: 'Roll California + Roll Philadelphia + 1 bebida',
+          price: 45.00,
+          isActive: true,
+          createdAt: new Date('2025-09-14T19:55:45.615Z'),
+          updatedAt: new Date('2025-09-14T19:55:45.615Z'),
         },
         {
-          id: 'mock-combo-3',
-          name: 'Bentos',
-          description: 'Combo Bentos japonés',
-          basePrice: 30.00,
-          isEnabled: true,
-          isAvailable: true,
-          preparationTime: 18,
-          maxSelections: 3,
-          categoryId: 'mock-cat-1',
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          id: 'da7500a9-fead-4f9e-a2d6-362025af476a',
+          name: 'Combo Postre',
+          description: 'Tiramisu + Helado de lúcuma + 1 bebida',
+          price: 25.00,
+          isActive: true,
+          createdAt: new Date('2025-09-14T19:55:45.615Z'),
+          updatedAt: new Date('2025-09-14T19:55:45.615Z'),
         },
       ];
     }

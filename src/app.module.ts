@@ -12,6 +12,7 @@ import { ReportsModule } from './reports/reports.module';
 import { HealthController } from './health/health.controller';
 import { SupabaseModule } from './lib/supabase.module';
 import { DiagModule } from './diag/diag.module';
+import { VersionModule } from './version/version.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { DiagModule } from './diag/diag.module';
     }),
     SupabaseModule,
     DiagModule,
+    VersionModule,
     AuthModule,
     UsersModule,
     CatalogModule,

@@ -174,3 +174,5 @@ async function testCatalogEndpoints() {
 
 // Ejecutar las pruebas
 testCatalogEndpoints().catch(console.error);
+
+

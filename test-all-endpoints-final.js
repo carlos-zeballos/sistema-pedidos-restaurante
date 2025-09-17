@@ -66,7 +66,7 @@ async function runTests() {
   // 1. HEALTH ENDPOINTS
   log('\n📋 1. PROBANDO HEALTH ENDPOINTS', 'yellow');
   results.health.push(await testEndpoint('GET', '/health'));
-  results.health.push(await testEndpoint('GET', '/health/database'));
+  results.health.push(await testEndpoint('GET', '/version'));
   
   // 2. CATALOG ENDPOINTS
   log('\n📋 2. PROBANDO CATALOG ENDPOINTS', 'yellow');
@@ -140,3 +140,5 @@ async function runTests() {
 
 // Ejecutar las pruebas
 runTests().catch(console.error);
+
+

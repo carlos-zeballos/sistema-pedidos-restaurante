@@ -30,13 +30,23 @@ async function bootstrap() {
       app.useGlobalFilters(new AllExceptionsFilter());
     }
     
+    // Health check endpoint simple para Render
+    app.getHttpAdapter().get('/health', (_req, res) => {
+      res.status(200).json({ 
+        ok: true, 
+        ts: new Date().toISOString(),
+        port: process.env.PORT || 'unknown'
+      });
+    });
+    
     const port = process.env.PORT || 10000;
     await app.listen(port);
     
     console.log(`🚀 Application is running on: http://localhost:${port}`);
     console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔍 Health check: http://localhost:${port}/health`);
     console.log(`🔍 Diagnostic endpoint: http://localhost:${port}/diag`);
-    console.log(`🌐 CORS enabled for origins: https://precious-travesseiro-c0f1d0.netlify.app, localhost:3000, localhost:5173`);
+    console.log(`🌐 CORS enabled for all origins`);
     
   } catch (error) {
     console.error('❌ Failed to start application:', error);

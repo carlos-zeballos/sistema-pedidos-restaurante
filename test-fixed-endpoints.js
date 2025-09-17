@@ -215,3 +215,5 @@ async function testFixedEndpoints() {
 
 // Ejecutar las pruebas
 testFixedEndpoints().catch(console.error);
+
+

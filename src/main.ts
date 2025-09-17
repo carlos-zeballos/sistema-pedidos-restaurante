@@ -8,35 +8,14 @@ async function bootstrap() {
   try {
     const app = await NestFactory.create(AppModule);
     
-    // Configurar CORS para permitir el frontend de Netlify
+    // Configurar CORS simplificado para evitar conflictos
     app.enableCors({
-      origin: [
-        'https://precious-travesseiro-c0f1d0.netlify.app',
-        'https://sistema-pedidos-kurp.netlify.app',
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'http://localhost:3001'
-      ],
+      origin: true, // Permitir todos los orígenes temporalmente
       credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
-      allowedHeaders: [
-        'Origin',
-        'X-Requested-With',
-        'Content-Type',
-        'Accept',
-        'Authorization',
-        'Cache-Control',
-        'Pragma'
-      ],
-      exposedHeaders: ['Authorization'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: '*',
       preflightContinue: false,
-      optionsSuccessStatus: 200
-    });
-    
-    // Middleware para logging de requests
-    app.use((req, res, next) => {
-      console.log(`${req.method} ${req.url} - Origin: ${req.headers.origin}`);
-      next();
+      optionsSuccessStatus: 204
     });
 
     // Configurar validación global

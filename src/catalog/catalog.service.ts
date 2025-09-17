@@ -440,43 +440,17 @@ export class CatalogService {
   async getSpaces() {
     console.log('🔍 CatalogService.getSpaces() - Iniciando...');
     try {
-      // Consulta ultra básica que solo selecciona columnas esenciales que sabemos que existen
+      // Consulta ultra básica usando select('*') para evitar problemas de columnas
       const { data, error } = await this.supabaseService.getClient()
         .from('Space')
-        .select('id, name, type, capacity, isActive, createdAt, updatedAt')
+        .select('*')
         .order('name', { ascending: true });
 
       console.log('📊 Query espacios - Data:', data?.length ?? 0, 'Error:', error);
 
       if (error) {
         console.error('❌ Error en getSpaces:', error);
-        // Intentar consulta aún más básica como fallback
-        try {
-          const { data: fallbackData, error: fallbackError } = await this.supabaseService.getClient()
-            .from('Space')
-            .select('id, name, type, isActive')
-            .order('name', { ascending: true });
-          
-          if (fallbackError) {
-            // Último recurso: solo id y name
-            const { data: minimalData, error: minimalError } = await this.supabaseService.getClient()
-              .from('Space')
-              .select('id, name')
-              .order('name', { ascending: true });
-              
-            if (minimalError) {
-              throw new HttpException(`Error getting spaces: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
-            }
-            
-            console.log('✅ Usando consulta mínima para espacios');
-            return minimalData as Space[];
-          }
-          
-          console.log('✅ Usando consulta fallback para espacios');
-          return fallbackData as Space[];
-        } catch (fallbackError) {
-          throw new HttpException(`Error getting spaces: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        throw new HttpException(`Error getting spaces: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
       console.log('✅ getSpaces exitoso - Espacios:', data?.length);

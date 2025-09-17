@@ -40,11 +40,11 @@ export class OrdersService {
       today.setHours(0, 0, 0, 0);
       const todayISO = today.toISOString();
       
-      // Consulta ultra básica que solo selecciona columnas esenciales
+      // Consulta ultra básica usando select('*') para evitar problemas de columnas
       let query = this.supabaseService
         .getClient()
         .from('Order')
-        .select('id, orderNumber, spaceId, customerName, status, totalAmount, notes, createdAt, updatedAt')
+        .select('*')
         .gte('createdAt', todayISO) // Solo órdenes creadas hoy
         .order('createdAt', { ascending: false });
 
@@ -60,57 +60,7 @@ export class OrdersService {
       const { data, error } = await query;
       if (error) {
         console.error('❌ Error en getOrders:', error);
-        // Intentar consulta aún más básica como fallback
-        try {
-          const basicQuery = this.supabaseService
-            .getClient()
-            .from('Order')
-            .select('id, orderNumber, customerName, status, totalAmount')
-            .gte('createdAt', todayISO)
-            .order('createdAt', { ascending: false });
-            
-          if (status && status !== 'ALL') {
-            const list = status.split(',').map((s) => s.trim()).filter(Boolean);
-            if (list.length > 1) {
-              basicQuery.in('status', list);
-            } else if (list.length === 1) {
-              basicQuery.eq('status', list[0]);
-            }
-          }
-          
-          const { data: basicData, error: basicError } = await basicQuery;
-          if (basicError) {
-            // Último recurso: consulta mínima
-            const minimalQuery = this.supabaseService
-              .getClient()
-              .from('Order')
-              .select('id, orderNumber, status')
-              .gte('createdAt', todayISO)
-              .order('createdAt', { ascending: false });
-              
-            if (status && status !== 'ALL') {
-              const list = status.split(',').map((s) => s.trim()).filter(Boolean);
-              if (list.length > 1) {
-                minimalQuery.in('status', list);
-              } else if (list.length === 1) {
-                minimalQuery.eq('status', list[0]);
-              }
-            }
-            
-            const { data: minimalData, error: minimalError } = await minimalQuery;
-            if (minimalError) {
-              throw new Error(`Error getting orders: ${basicError.message}`);
-            }
-            
-            console.log('✅ Usando consulta mínima como último recurso');
-            return minimalData as Order[];
-          }
-          
-          console.log('✅ Usando consulta básica como fallback');
-          return basicData as Order[];
-        } catch (fallbackError) {
-          throw new Error(`Error getting orders: ${error.message}`);
-        }
+        throw new Error(`Error getting orders: ${error.message}`);
       }
       
       console.log('✅ getOrders exitoso - Órdenes:', data?.length);

@@ -100,6 +100,84 @@ export class CatalogController {
     }
   }
 
+  @Get('public/spaces-simple')
+  async getSpacesSimple() {
+    try {
+      console.log('🔍 Obteniendo espacios de forma ultra simple...');
+      
+      const { data, error } = await this.supabaseService
+        .getClient()
+        .from('Space')
+        .select('*')
+        .limit(10);
+        
+      if (error) {
+        console.error('❌ Error en consulta simple de espacios:', error);
+        return {
+          ok: false,
+          error: error.message,
+          details: 'Error en consulta simple de espacios'
+        };
+      }
+      
+      console.log('✅ Espacios obtenidos exitosamente:', data?.length || 0);
+      return {
+        ok: true,
+        message: 'Consulta simple de espacios exitosa',
+        spaces: data,
+        count: data?.length || 0,
+        timestamp: new Date().toISOString()
+      };
+      
+    } catch (error) {
+      console.error('❌ Error en endpoint simple de espacios:', error);
+      return {
+        ok: false,
+        error: error.message,
+        details: 'Error en endpoint simple de espacios'
+      };
+    }
+  }
+
+  @Get('public/categories-simple')
+  async getCategoriesSimple() {
+    try {
+      console.log('🔍 Obteniendo categorías de forma ultra simple...');
+      
+      const { data, error } = await this.supabaseService
+        .getClient()
+        .from('Category')
+        .select('*')
+        .limit(10);
+        
+      if (error) {
+        console.error('❌ Error en consulta simple de categorías:', error);
+        return {
+          ok: false,
+          error: error.message,
+          details: 'Error en consulta simple de categorías'
+        };
+      }
+      
+      console.log('✅ Categorías obtenidas exitosamente:', data?.length || 0);
+      return {
+        ok: true,
+        message: 'Consulta simple de categorías exitosa',
+        categories: data,
+        count: data?.length || 0,
+        timestamp: new Date().toISOString()
+      };
+      
+    } catch (error) {
+      console.error('❌ Error en endpoint simple de categorías:', error);
+      return {
+        ok: false,
+        error: error.message,
+        details: 'Error en endpoint simple de categorías'
+      };
+    }
+  }
+
   @Get('public/categories-direct')
   async getCategoriesDirect() {
     try {
